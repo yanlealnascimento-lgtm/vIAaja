@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: viaaja-backend
+  profiles:
+    active: dev
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+viaaja:
+  url-frontend: http://localhost:5173
+  jwt:
+    segredo: ${VIAAJA_JWT_SEGREDO:troque-este-segredo-em-producao-viaaja-ucsal-2026-chave}
+    expiracao-minutos: 480
+  ia:
+    provedor: ${VIAAJA_IA_PROVEDOR:simulado}
+    url: ${VIAAJA_IA_URL:https://api.openai.com/v1/chat/completions}
+    chave: ${VIAAJA_IA_CHAVE:}
+    modelo: ${VIAAJA_IA_MODELO:gpt-4o-mini}
+    timeout-segundos: 8
+  comparador:
+    preco-combustivel-por-litro: 6.10
+    consumo-medio-km-por-litro: 11.0
+    pedagio-por-cem-km: 9.50

@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: ${VIAAJA_DB_URL:jdbc:postgresql://localhost:5432/viaaja}
+    driver-class-name: org.postgresql.Driver
+    username: ${VIAAJA_DB_USUARIO:viaaja}
+    password: ${VIAAJA_DB_SENHA:viaaja}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+logging:
+  level:
+    com.ucsal.viaaja: INFO
