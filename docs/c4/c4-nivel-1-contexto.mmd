@@ -1,0 +1,26 @@
+flowchart TB
+    classDef pessoa fill:#08427b,stroke:#052e56,stroke-width:1px,color:#ffffff
+    classDef sistema fill:#1168bd,stroke:#0b4884,stroke-width:1px,color:#ffffff
+    classDef externo fill:#999999,stroke:#6b6b6b,stroke-width:1px,color:#ffffff
+
+    viajante["<b>Viajante</b><br/><i>[Pessoa]</i><br/><br/>Pesquisa destinos, compara custos<br/>e monta itinerarios"]
+    parceiro["<b>Parceiro Fornecedor</b><br/><i>[Pessoa]</i><br/><br/>Mantem precos e disponibilidade<br/>das ofertas"]
+    atendente["<b>Atendente de Suporte</b><br/><i>[Pessoa]</i><br/><br/>Atende solicitacoes e acompanha<br/>ocorrencias"]
+    admin["<b>Administrador</b><br/><i>[Pessoa]</i><br/><br/>Aprova parceiros, modera avaliacoes<br/>e acompanha indicadores"]
+
+    viaaja["<b>vIAaja</b><br/><i>[Sistema de Software]</i><br/><br/>Plataforma web de planejamento de viagens<br/>com apoio de inteligencia artificial"]
+
+    ia["<b>Provedor de IA</b><br/><i>[Sistema Externo]</i><br/><br/>API de modelo de linguagem usada para<br/>sugerir roteiros, resumir avaliacoes<br/>e traduzir textos"]
+    email["<b>Servico de E-mail</b><br/><i>[Sistema Externo]</i><br/><br/>Confirmacao de conta e<br/>recuperacao de senha"]
+
+    viajante -->|"Busca ofertas, compara custos<br/>e gera roteiros [HTTPS]"| viaaja
+    parceiro -->|"Mantem ofertas e<br/>disponibilidade [HTTPS]"| viaaja
+    atendente -->|"Consulta e trata<br/>solicitacoes [HTTPS]"| viaaja
+    admin -->|"Administra a<br/>plataforma [HTTPS]"| viaaja
+
+    viaaja -->|"Envia parametros de viagem e<br/>recebe sugestoes [JSON/HTTPS]"| ia
+    viaaja -->|"Dispara mensagens<br/>transacionais [SMTP]"| email
+
+    class viajante,parceiro,atendente,admin pessoa
+    class viaaja sistema
+    class ia,email externo

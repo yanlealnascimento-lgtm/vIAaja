@@ -1,0 +1,88 @@
+classDiagram
+    direction TB
+
+    class ComparadorController {
+        -ComparadorService comparadorService
+        +comparar(ComparacaoRequisicao, UsuarioAutenticado) ComparacaoResposta
+        +historico(UsuarioAutenticado) List~ComparacaoResposta~
+    }
+
+    class ComparadorService {
+        -List~FonteDePreco~ fontes
+        -ComparacaoCustoRepository repository
+        +comparar(Long, String, String, LocalDate, int) ComparacaoCusto
+        +historico(Long) List~ComparacaoCusto~
+    }
+
+    class FonteDePreco {
+        <<interface>>
+        +modalAtendido() ModalTransporte
+        +cotar(String, String, LocalDate, int) OpcaoDeslocamento
+    }
+
+    class FontePassagemAerea {
+        -PassagemRepository passagens
+        +modalAtendido() ModalTransporte
+        +cotar(String, String, LocalDate, int) OpcaoDeslocamento
+    }
+
+    class FontePassagemRodoviaria {
+        -PassagemRepository passagens
+        +modalAtendido() ModalTransporte
+        +cotar(String, String, LocalDate, int) OpcaoDeslocamento
+    }
+
+    class FonteCarroEstimado {
+        -DestinoRepository destinos
+        -PropriedadesAplicacao propriedades
+        +modalAtendido() ModalTransporte
+        +cotar(String, String, LocalDate, int) OpcaoDeslocamento
+    }
+
+    class ComparacaoCusto {
+        -Long id
+        -Long solicitanteId
+        -String origem
+        -String destino
+        -LocalDate data
+        -int passageiros
+        -LocalDateTime consultadoEm
+        -ModalTransporte modalMaisBarato
+        -List~OpcaoDeslocamento~ opcoes
+        +registrar(List~OpcaoDeslocamento~) void
+        +maisBarata() Optional~OpcaoDeslocamento~
+    }
+
+    class OpcaoDeslocamento {
+        -ModalTransporte modal
+        -BigDecimal custoTotal
+        -boolean estimado
+        -boolean disponivel
+        -String detalhe
+    }
+
+    class ModalTransporte {
+        <<enumeration>>
+        AVIAO
+        ONIBUS
+        CARRO
+    }
+
+    class ComparacaoCustoRepository {
+        <<interface>>
+        +save(ComparacaoCusto) ComparacaoCusto
+        +findTop10BySolicitanteIdOrderByConsultadoEmDesc(Long) List~ComparacaoCusto~
+    }
+
+    ComparadorController --> ComparadorService
+    ComparadorService --> FonteDePreco
+    ComparadorService --> ComparacaoCustoRepository
+    ComparadorService --> ComparacaoCusto
+    FonteDePreco <|.. FontePassagemAerea
+    FonteDePreco <|.. FontePassagemRodoviaria
+    FonteDePreco <|.. FonteCarroEstimado
+    FonteDePreco --> OpcaoDeslocamento
+    ComparacaoCusto *-- OpcaoDeslocamento
+    OpcaoDeslocamento --> ModalTransporte
+    ComparacaoCusto --> ModalTransporte
+    ComparacaoCustoRepository --> ComparacaoCusto

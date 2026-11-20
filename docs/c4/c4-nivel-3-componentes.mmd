@@ -1,0 +1,60 @@
+flowchart TB
+    classDef externoCont fill:#438dd5,stroke:#2e6295,stroke-width:1px,color:#ffffff
+    classDef componente fill:#85bbf0,stroke:#5d82a8,stroke-width:1px,color:#000000
+    classDef externo fill:#999999,stroke:#6b6b6b,stroke-width:1px,color:#ffffff
+
+    spa["<b>Aplicacao Web</b><br/><i>[Conteiner: React 18 + Vite]</i>"]
+
+    subgraph api["API de Aplicacao [Conteiner: Spring Boot 3]"]
+        direction TB
+        seg["<b>Seguranca</b><br/><i>[Spring Security + JWT]</i><br/>Filtro de autenticacao, emissao e validacao<br/>de token e autorizacao por perfil"]
+        ctrl["<b>Controladores REST</b><br/><i>[Spring MVC]</i><br/>Autenticacao, usuarios, busca, destinos, comparador,<br/>assistente, itinerarios, avaliacoes, social,<br/>parceiro e administracao"]
+        erros["<b>Tratador de Erros</b><br/><i>[RestControllerAdvice]</i><br/>Converte excecoes de regra de negocio<br/>em respostas padronizadas"]
+
+        ident["<b>Servico de Identidade</b><br/><i>[Service]</i><br/>Cadastro, confirmacao de conta, recuperacao<br/>de senha e preferencias de privacidade"]
+        busca["<b>Servico de Busca</b><br/><i>[Service]</i><br/>Consulta passagens, hospedagens e<br/>atividades por destino, data e filtros"]
+        comp["<b>Servico de Comparacao de Custos</b><br/><i>[Service]</i><br/>Consolida as cotacoes por modal e<br/>identifica a opcao mais barata"]
+        itin["<b>Servico de Itinerarios</b><br/><i>[Service]</i><br/>Criacao manual, aceite da sugestao da IA<br/>e edicao de dias e itens"]
+        social["<b>Servicos Social e de Avaliacoes</b><br/><i>[Service]</i><br/>Convites, reunioes de planejamento,<br/>avaliacoes e moderacao"]
+        integ["<b>Servico de Integracao com IA</b><br/><i>[Service + Cache]</i><br/>Monta o payload minimo, registra a chamada<br/>e trata a indisponibilidade"]
+
+        fontes["<b>Fontes de Preco</b><br/><i>[Adaptadores da porta FonteDePreco]</i><br/>Passagem aerea, passagem rodoviaria<br/>e estimativa de carro proprio"]
+        prov["<b>Provedores de IA</b><br/><i>[Adaptadores da porta ServicoIA]</i><br/>Simulador local (padrao) e cliente<br/>do provedor externo"]
+
+        repo["<b>Repositorios</b><br/><i>[Spring Data JPA]</i><br/>Acesso as entidades mapeadas com JPA<br/>e consultas JPQL"]
+    end
+
+    banco[("<b>Banco de Dados</b><br/><i>[PostgreSQL / H2]</i>")]
+    ia["<b>Provedor de IA</b><br/><i>[Sistema Externo]</i>"]
+
+    spa -->|"Envia o token no<br/>cabecalho [HTTPS]"| seg
+    seg --> ctrl
+    ctrl --> erros
+
+    ctrl --> ident
+    ctrl --> busca
+    ctrl --> comp
+    ctrl --> itin
+    ctrl --> social
+    ctrl --> integ
+
+    comp --> fontes
+    integ --> prov
+    itin --> integ
+
+    ident --> repo
+    busca --> repo
+    comp --> repo
+    itin --> repo
+    social --> repo
+    integ --> repo
+    fontes --> repo
+
+    repo -->|"Le e grava [JDBC]"| banco
+    prov -->|"Chama quando o provedor externo<br/>esta habilitado [JSON/HTTPS]"| ia
+
+    class spa externoCont
+    class seg,ctrl,erros,ident,busca,comp,itin,social,integ,fontes,prov,repo componente
+    class banco externoCont
+    class ia externo
+    style api fill:#ffffff,stroke:#444444,stroke-width:1px,stroke-dasharray: 6 4,color:#444444

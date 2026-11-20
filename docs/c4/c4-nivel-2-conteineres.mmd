@@ -1,0 +1,36 @@
+flowchart TB
+    classDef pessoa fill:#08427b,stroke:#052e56,stroke-width:1px,color:#ffffff
+    classDef conteiner fill:#438dd5,stroke:#2e6295,stroke-width:1px,color:#ffffff
+    classDef banco fill:#438dd5,stroke:#2e6295,stroke-width:1px,color:#ffffff
+    classDef externo fill:#999999,stroke:#6b6b6b,stroke-width:1px,color:#ffffff
+
+    viajante["<b>Viajante</b><br/><i>[Pessoa]</i>"]
+    parceiro["<b>Parceiro Fornecedor</b><br/><i>[Pessoa]</i>"]
+    admin["<b>Administrador</b><br/><i>[Pessoa]</i>"]
+
+    subgraph sistema["Sistema vIAaja"]
+        direction TB
+        spa["<b>Aplicacao Web</b><br/><i>[Conteiner: React 18 + Vite]</i><br/><br/>Entrega as telas no navegador e consome<br/>a API REST enviando o token JWT"]
+        api["<b>API de Aplicacao</b><br/><i>[Conteiner: Java 17 + Spring Boot 3]</i><br/><br/>Expoe os endpoints REST, aplica as regras<br/>de negocio e orquestra as integracoes"]
+        doc["<b>Documentacao da API</b><br/><i>[Conteiner: springdoc-openapi]</i><br/><br/>Publica o contrato dos endpoints<br/>no Swagger UI"]
+        banco[("<b>Banco de Dados</b><br/><i>[Conteiner: PostgreSQL / H2]</i><br/><br/>Usuarios, destinos, ofertas, itinerarios,<br/>avaliacoes, convites e chamadas de IA")]
+    end
+
+    ia["<b>Provedor de IA</b><br/><i>[Sistema Externo]</i>"]
+    email["<b>Servico de E-mail</b><br/><i>[Sistema Externo]</i>"]
+
+    viajante -->|"Usa [HTTPS]"| spa
+    parceiro -->|"Usa [HTTPS]"| spa
+    admin -->|"Usa [HTTPS]"| spa
+
+    spa -->|"Chamadas REST autenticadas<br/>[JSON/HTTPS]"| api
+    api -->|"Le e grava [JDBC]"| banco
+    api -->|"Publica o contrato<br/>[OpenAPI 3]"| doc
+    api -->|"Solicita roteiros, resumos<br/>e traducoes [JSON/HTTPS]"| ia
+    api -->|"Envia confirmacao e<br/>recuperacao de senha [SMTP]"| email
+
+    class viajante,parceiro,admin pessoa
+    class spa,api,doc conteiner
+    class banco banco
+    class ia,email externo
+    style sistema fill:#ffffff,stroke:#444444,stroke-width:1px,stroke-dasharray: 6 4,color:#444444
