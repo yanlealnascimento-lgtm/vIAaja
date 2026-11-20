@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
-@Tag(name = "Autenticacao", description = "RF-001 e RF-002 Cadastro, login e recuperacao de acesso")
+@Tag(name = "Autenticacao", description = "RF-001 e RF-002 Cadastro, login e recuperação de acesso")
 public class AutenticacaoController {
 
     private final UsuarioService usuarioService;
@@ -78,15 +78,15 @@ public class AutenticacaoController {
     }
 
     @PostMapping("/recuperar-senha")
-    @Operation(summary = "RF-002 Solicita o link de recuperacao de senha")
+    @Operation(summary = "RF-002 Solicita o código de recuperação de senha")
     public ResponseEntity<Map<String, String>> recuperar(@RequestBody @Valid RecuperacaoRequisicao requisicao) {
         usuarioService.solicitarRecuperacaoDeSenha(requisicao.email());
         return ResponseEntity.ok(Map.of("mensagem",
-                "Se o e-mail estiver cadastrado, o link de recuperacao sera enviado"));
+                "Se o e-mail estiver cadastrado, o código de recuperação será enviado"));
     }
 
     @PostMapping("/redefinir-senha")
-    @Operation(summary = "RF-002 Redefine a senha a partir do token de recuperacao")
+    @Operation(summary = "RF-002 Redefine a senha a partir do código de recuperação")
     public ResponseEntity<Map<String, String>> redefinir(@RequestBody @Valid RedefinicaoRequisicao requisicao) {
         usuarioService.redefinirSenha(requisicao.token(), requisicao.novaSenha());
         return ResponseEntity.ok(Map.of("mensagem", "Senha redefinida com sucesso"));

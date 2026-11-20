@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client.js'
 import Aviso from '../components/Aviso.jsx'
+import CabecalhoPagina from '../components/CabecalhoPagina.jsx'
 import Carregando from '../components/Carregando.jsx'
-import { data, moeda, hora } from '../utils/formato.js'
+import RoteiroDias from '../components/RoteiroDias.jsx'
+import { data, dataExtensa, moeda, rotulo } from '../utils/formato.js'
 
-const VAZIO = {
-  ordemDoDia: 1, titulo: '', descricao: '', periodo: 'Manha',
+const NOVO_ITEM = {
+  ordemDoDia: 1, titulo: '', descricao: '', periodo: 'MANHA',
   horaInicio: '09:00', horaFim: '12:00', custoEstimado: 0
 }
 
@@ -16,7 +18,8 @@ export default function ItinerarioDetalhe() {
   const [itinerario, setItinerario] = useState(null)
   const [erro, setErro] = useState('')
   const [mensagem, setMensagem] = useState('')
-  const [novoItem, setNovoItem] = useState(VAZIO)
+  const [novoItem, setNovoItem] = useState(NOVO_ITEM)
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false)
 
   useEffect(() => { carregar() }, [id])
 
@@ -43,8 +46,8 @@ export default function ItinerarioDetalhe() {
         custoEstimado: Number(novoItem.custoEstimado)
       })
       setItinerario(atualizado)
-      setNovoItem({ ...VAZIO, ordemDoDia: novoItem.ordemDoDia })
-      setMensagem('Atividade adicionada.')
+      setNovoItem({ ...NOVO_ITEM, ordemDoDia: novoItem.ordemDoDia })
+      setMensagem(`Atividade incluída no dia ${novoItem.ordemDoDia}.`)
     } catch (e) {
       setErro(e.message)
     }
@@ -52,8 +55,10 @@ export default function ItinerarioDetalhe() {
 
   async function remover(itemId) {
     setErro('')
+    setMensagem('')
     try {
       setItinerario(await api.del(`/itinerarios/${id}/itens/${itemId}`))
+      setMensagem('Atividade removida.')
     } catch (e) {
       setErro(e.message)
     }
@@ -63,7 +68,7 @@ export default function ItinerarioDetalhe() {
     setErro('')
     try {
       setItinerario(await api.patch(`/itinerarios/${id}/confirmar`))
-      setMensagem('Itinerario confirmado.')
+      setMensagem('Itinerário confirmado.')
     } catch (e) {
       setErro(e.message)
     }
@@ -79,129 +84,124 @@ export default function ItinerarioDetalhe() {
     }
   }
 
-  if (!itinerario) return <Carregando />
+  if (!itinerario) {
+    return erro ? <Aviso tipo="erro">{erro}</Aviso> : <Carregando />
+  }
 
   const acimaDoOrcamento = itinerario.orcamento
     && Number(itinerario.custoTotal) > Number(itinerario.orcamento)
+  const confirmado = itinerario.status === 'CONFIRMADO'
 
   return (
     <>
-      <h1>{itinerario.titulo}</h1>
-      <p style={{ marginTop: -6, color: 'var(--cinza-600)' }}>
-        {itinerario.destino} - {data(itinerario.dataInicio)} a {data(itinerario.dataFim)}
+      <p className="pequeno-texto" style={{ marginBottom: 12 }}>
+        <Link to="/itinerarios">Minhas viagens</Link>
       </p>
+      <CabecalhoPagina
+        titulo={itinerario.titulo}
+        descricao={`${itinerario.destino}, de ${data(itinerario.dataInicio)} a ${data(itinerario.dataFim)}.`}
+      />
 
       <Aviso tipo="erro">{erro}</Aviso>
       <Aviso tipo="sucesso">{mensagem}</Aviso>
       {acimaDoOrcamento && (
         <Aviso tipo="atencao">
-          O custo estimado passou do orcamento de {moeda(itinerario.orcamento)}.
+          O custo estimado passou do orçamento de {moeda(itinerario.orcamento)}. Remova ou troque
+          alguma atividade para voltar ao limite.
         </Aviso>
       )}
 
-      <div className="cartao">
-        <div className="grade tres">
-          <div>
-            <div className="rotulo-pequeno">Custo total</div>
-            <div className="valor-grande">{moeda(itinerario.custoTotal)}</div>
-          </div>
-          <div>
-            <div className="rotulo-pequeno">Orcamento</div>
-            <div className="valor-grande">{moeda(itinerario.orcamento)}</div>
-          </div>
-          <div>
-            <div className="rotulo-pequeno">Origem</div>
-            <div style={{ marginTop: 6 }}>
-              <span className="selo">
-                {itinerario.origem === 'MANUAL' ? 'montado manualmente'
-                  : itinerario.origem === 'SUGERIDO_IA' ? 'sugerido pela IA'
-                  : 'sugerido pela IA e editado'}
-              </span>
-            </div>
-          </div>
+      <div className="indicadores">
+        <div className="indicador">
+          <div className="rotulo-pequeno">Custo estimado</div>
+          <div className="valor-grande">{moeda(itinerario.custoTotal)}</div>
         </div>
-        <div className="linha-botoes" style={{ marginTop: 16 }}>
-          <button className="botao" onClick={confirmar}
-                  disabled={itinerario.status === 'CONFIRMADO'}>
-            {itinerario.status === 'CONFIRMADO' ? 'Confirmado' : 'Confirmar itinerario'}
-          </button>
-          <button className="botao perigo" onClick={excluir}>Excluir itinerario</button>
+        <div className="indicador">
+          <div className="rotulo-pequeno">Orçamento</div>
+          <div className="valor-grande">{moeda(itinerario.orcamento)}</div>
+        </div>
+        <div className="indicador">
+          <div className="rotulo-pequeno">Como foi montado</div>
+          <div className="dado-rotulado"><div className="valor">{rotulo('origemItinerario', itinerario.origem)}</div></div>
+        </div>
+        <div className="indicador">
+          <div className="rotulo-pequeno">Situação</div>
+          <div className="dado-rotulado"><div className="valor">{rotulo('statusItinerario', itinerario.status)}</div></div>
         </div>
       </div>
 
       <div className="cartao">
-        <h2>Adicionar atividade</h2>
+        <div className="linha-titulo" style={{ marginBottom: 8 }}>
+          <h2 style={{ margin: 0 }}>Roteiro dia a dia</h2>
+          <div className="linha-botoes">
+            <button className="botao pequeno" onClick={confirmar} disabled={confirmado}>
+              {confirmado ? 'Confirmado' : 'Confirmar itinerário'}
+            </button>
+          </div>
+        </div>
+        <RoteiroDias dias={itinerario.dias} aoRemover={remover} />
+      </div>
+
+      <div className="cartao">
+        <h2>Incluir atividade</h2>
         <form onSubmit={adicionar}>
           <div className="grade tres">
             <div className="campo">
-              <label>Dia</label>
-              <select value={novoItem.ordemDoDia} onChange={e => alterar('ordemDoDia', e.target.value)}>
+              <label htmlFor="a-dia">Dia</label>
+              <select id="a-dia" value={novoItem.ordemDoDia} onChange={e => alterar('ordemDoDia', e.target.value)}>
                 {itinerario.dias.map(d => (
-                  <option key={d.ordem} value={d.ordem}>Dia {d.ordem} - {data(d.data)}</option>
+                  <option key={d.ordem} value={d.ordem}>Dia {d.ordem}, {dataExtensa(d.data)}</option>
                 ))}
               </select>
             </div>
             <div className="campo">
-              <label>Titulo</label>
-              <input value={novoItem.titulo} required onChange={e => alterar('titulo', e.target.value)} />
+              <label htmlFor="a-titulo">Atividade</label>
+              <input id="a-titulo" value={novoItem.titulo} required placeholder="Ex.: passeio de escuna"
+                     onChange={e => alterar('titulo', e.target.value)} />
             </div>
             <div className="campo">
-              <label>Periodo</label>
-              <select value={novoItem.periodo} onChange={e => alterar('periodo', e.target.value)}>
-                <option>Manha</option>
-                <option>Tarde</option>
-                <option>Noite</option>
+              <label htmlFor="a-periodo">Período</label>
+              <select id="a-periodo" value={novoItem.periodo} onChange={e => alterar('periodo', e.target.value)}>
+                <option value="MANHA">Manhã</option>
+                <option value="TARDE">Tarde</option>
+                <option value="NOITE">Noite</option>
               </select>
             </div>
             <div className="campo">
-              <label>Hora de inicio</label>
-              <input type="time" value={novoItem.horaInicio}
+              <label htmlFor="a-inicio">Começa às</label>
+              <input id="a-inicio" type="time" value={novoItem.horaInicio}
                      onChange={e => alterar('horaInicio', e.target.value)} />
             </div>
             <div className="campo">
-              <label>Hora de fim</label>
-              <input type="time" value={novoItem.horaFim}
+              <label htmlFor="a-fim">Termina às</label>
+              <input id="a-fim" type="time" value={novoItem.horaFim}
                      onChange={e => alterar('horaFim', e.target.value)} />
             </div>
             <div className="campo">
-              <label>Custo estimado</label>
-              <input type="number" min="0" step="10" value={novoItem.custoEstimado}
+              <label htmlFor="a-custo">Custo estimado</label>
+              <input id="a-custo" type="number" min="0" step="10" value={novoItem.custoEstimado}
                      onChange={e => alterar('custoEstimado', e.target.value)} />
             </div>
           </div>
-          <div className="campo">
-            <label>Descricao</label>
-            <input value={novoItem.descricao} onChange={e => alterar('descricao', e.target.value)} />
+          <div className="campo" style={{ marginTop: 18 }}>
+            <label htmlFor="a-descricao">Observação</label>
+            <input id="a-descricao" value={novoItem.descricao} placeholder="Opcional"
+                   onChange={e => alterar('descricao', e.target.value)} />
           </div>
-          <button className="botao" type="submit">Adicionar</button>
+          <button className="botao" type="submit">Incluir atividade</button>
         </form>
       </div>
 
-      <div className="cartao">
-        <h2>Roteiro dia a dia</h2>
-        {itinerario.dias.map(dia => (
-          <div key={dia.id} className="dia-itinerario">
-            <h3>Dia {dia.ordem} - {data(dia.data)} - {moeda(dia.custoDoDia)}</h3>
-            {dia.itens.length === 0 ? (
-              <p style={{ color: 'var(--cinza-600)', fontSize: 14 }}>Nenhuma atividade neste dia.</p>
-            ) : dia.itens.map(item => (
-              <div key={item.id} className="item-itinerario">
-                <div>
-                  <strong>{item.titulo}</strong>
-                  <div className="rotulo-pequeno">
-                    {item.periodo} - {hora(item.horaInicio)} as {hora(item.horaFim)}
-                  </div>
-                  <div style={{ fontSize: 13, color: 'var(--cinza-600)' }}>{item.descricao}</div>
-                </div>
-                <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  <div>{moeda(item.custoEstimado)}</div>
-                  <button className="botao perigo pequeno" style={{ marginTop: 6 }}
-                          onClick={() => remover(item.id)}>Remover</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ))}
+      <div className="linha-botoes">
+        {confirmandoExclusao ? (
+          <>
+            <span className="pequeno-texto">Excluir esta viagem e todas as atividades? Isso não pode ser desfeito.</span>
+            <button className="botao perigo pequeno" onClick={excluir}>Sim, excluir</button>
+            <button className="botao secundario pequeno" onClick={() => setConfirmandoExclusao(false)}>Cancelar</button>
+          </>
+        ) : (
+          <button className="botao perigo pequeno" onClick={() => setConfirmandoExclusao(true)}>Excluir itinerário</button>
+        )}
       </div>
     </>
   )

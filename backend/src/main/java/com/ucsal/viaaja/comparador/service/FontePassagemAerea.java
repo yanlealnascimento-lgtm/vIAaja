@@ -34,8 +34,11 @@ public class FontePassagemAerea implements FonteDePreco {
         }
         Passagem maisBarata = encontradas.get(0);
         BigDecimal total = maisBarata.getPreco().multiply(BigDecimal.valueOf(passageiros));
-        String detalhe = String.format("%s, %d parada(s), %d min de voo",
-                maisBarata.getEmpresa(), maisBarata.getNumeroParadas(), maisBarata.duracaoEmMinutos());
+        long minutos = maisBarata.duracaoEmMinutos();
+        String paradas = maisBarata.getNumeroParadas() == 0 ? "voo direto"
+                : maisBarata.getNumeroParadas() == 1 ? "1 parada" : maisBarata.getNumeroParadas() + " paradas";
+        String detalhe = String.format("%s, %s, %dh%02d de voo",
+                maisBarata.getEmpresa(), paradas, minutos / 60, minutos % 60);
         return new OpcaoDeslocamento(ModalTransporte.AVIAO, total, false, true, detalhe);
     }
 }

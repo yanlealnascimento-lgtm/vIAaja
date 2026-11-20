@@ -7,7 +7,9 @@ import com.ucsal.viaaja.comparador.domain.OpcaoDeslocamento;
 import com.ucsal.viaaja.config.PropriedadesAplicacao;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.NumberFormat;
 import java.time.LocalDate;
+import java.util.Locale;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 
@@ -32,7 +34,7 @@ public class FonteCarroEstimado implements FonteDePreco {
         Optional<Destino> destinoEncontrado = destinoRepository.findFirstByCidadeIgnoreCase(destino);
         if (destinoEncontrado.isEmpty() || destinoEncontrado.get().getDistanciaReferenciaKm() == null) {
             return OpcaoDeslocamento.indisponivel(ModalTransporte.CARRO,
-                    "Distancia de referencia indisponivel para este destino");
+                    "Distância de referência indisponível para este destino");
         }
 
         int distancia = destinoEncontrado.get().getDistanciaReferenciaKm();
@@ -49,12 +51,13 @@ public class FonteCarroEstimado implements FonteDePreco {
                 .multiply(BigDecimal.valueOf(2))
                 .setScale(2, RoundingMode.HALF_UP);
 
+        NumberFormat reais = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
         String detalhe = String.format(
-                "Estimativa de ida e volta para %d km: combustivel R$ %s e pedagio R$ %s. "
-                        + "Valor por veiculo, independente do numero de passageiros (RN-007)",
+                "Ida e volta, %d km: combustível %s e pedágio %s. "
+                        + "Valor por veículo, não muda com o número de passageiros",
                 distancia * 2,
-                combustivel.multiply(BigDecimal.valueOf(2)).setScale(2, RoundingMode.HALF_UP),
-                pedagio.multiply(BigDecimal.valueOf(2)).setScale(2, RoundingMode.HALF_UP));
+                reais.format(combustivel.multiply(BigDecimal.valueOf(2))),
+                reais.format(pedagio.multiply(BigDecimal.valueOf(2))));
 
         return new OpcaoDeslocamento(ModalTransporte.CARRO, total, true, true, detalhe);
     }

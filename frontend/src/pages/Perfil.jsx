@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client.js'
 import Aviso from '../components/Aviso.jsx'
+import CabecalhoPagina from '../components/CabecalhoPagina.jsx'
 import Carregando from '../components/Carregando.jsx'
-import { dataHora } from '../utils/formato.js'
+import Vazio from '../components/Vazio.jsx'
+import { dataHora, rotulo } from '../utils/formato.js'
 
 export default function Perfil() {
   const [eu, setEu] = useState(null)
@@ -10,18 +12,13 @@ export default function Perfil() {
   const [erro, setErro] = useState('')
   const [mensagem, setMensagem] = useState('')
   const [form, setForm] = useState({ nome: '', telefone: '', cidadeAproximada: '' })
-  const [privacidade, setPrivacidade] = useState({
-    visivelComoProximo: false, quemPodeConvidar: 'NINGUEM'
-  })
+  const [privacidade, setPrivacidade] = useState({ visivelComoProximo: false, quemPodeConvidar: 'NINGUEM' })
 
   useEffect(() => { carregar() }, [])
 
   async function carregar() {
     try {
-      const [dados, listaNotificacoes] = await Promise.all([
-        api.get('/usuarios/eu'),
-        api.get('/notificacoes')
-      ])
+      const [dados, listaNotificacoes] = await Promise.all([api.get('/usuarios/eu'), api.get('/notificacoes')])
       setEu(dados)
       setNotificacoes(listaNotificacoes)
       setForm({
@@ -44,7 +41,7 @@ export default function Perfil() {
     setMensagem('')
     try {
       await api.put('/usuarios/eu', form)
-      setMensagem('Perfil atualizado.')
+      setMensagem('Dados pessoais salvos.')
       carregar()
     } catch (e) {
       setErro(e.message)
@@ -57,7 +54,7 @@ export default function Perfil() {
     setMensagem('')
     try {
       await api.put('/usuarios/eu/privacidade', privacidade)
-      setMensagem('Preferencias de privacidade atualizadas.')
+      setMensagem('Preferências de privacidade salvas.')
       carregar()
     } catch (e) {
       setErro(e.message)
@@ -69,90 +66,82 @@ export default function Perfil() {
     carregar()
   }
 
-  if (!eu) return <Carregando />
+  if (!eu) return erro ? <Aviso tipo="erro">{erro}</Aviso> : <Carregando />
+
+  const naoLidas = notificacoes.filter(n => !n.lida).length
 
   return (
     <>
-      <h1>Meu perfil</h1>
+      <CabecalhoPagina titulo="Meu perfil" descricao={eu.email} />
 
       <Aviso tipo="erro">{erro}</Aviso>
       <Aviso tipo="sucesso">{mensagem}</Aviso>
 
-      <div className="grade duas">
+      <div className="grade duas" style={{ alignItems: 'start' }}>
         <div className="cartao">
           <h2>Dados pessoais</h2>
           <form onSubmit={salvarPerfil}>
             <div className="campo">
-              <label>Nome</label>
-              <input value={form.nome} required minLength={3}
+              <label htmlFor="pf-nome">Nome</label>
+              <input id="pf-nome" value={form.nome} required minLength={3}
                      onChange={e => setForm(a => ({ ...a, nome: e.target.value }))} />
             </div>
             <div className="campo">
-              <label>E-mail</label>
-              <input value={eu.email} disabled />
-            </div>
-            <div className="campo">
-              <label>Telefone</label>
-              <input value={form.telefone}
+              <label htmlFor="pf-telefone">Telefone</label>
+              <input id="pf-telefone" value={form.telefone}
                      onChange={e => setForm(a => ({ ...a, telefone: e.target.value }))} />
             </div>
             <div className="campo">
-              <label>Cidade aproximada</label>
-              <input value={form.cidadeAproximada}
+              <label htmlFor="pf-cidade">Cidade onde você mora</label>
+              <input id="pf-cidade" value={form.cidadeAproximada}
                      onChange={e => setForm(a => ({ ...a, cidadeAproximada: e.target.value }))} />
+              <span className="ajuda">Usada só para mostrar viajantes da mesma região.</span>
             </div>
-            <button className="botao" type="submit">Salvar</button>
+            <button className="botao" type="submit">Salvar dados</button>
           </form>
         </div>
 
         <div className="cartao">
           <h2>Privacidade</h2>
-          <p className="rotulo-pequeno">
-            A proximidade usa apenas a cidade aproximada, nunca a localizacao exata (RN-011).
-          </p>
           <form onSubmit={salvarPrivacidade}>
             <div className="campo">
-              <label>
-                <input type="checkbox" style={{ width: 'auto', marginRight: 8 }}
-                       checked={privacidade.visivelComoProximo}
-                       onChange={e => setPrivacidade(a => ({
-                         ...a, visivelComoProximo: e.target.checked
-                       }))} />
-                Quero aparecer como viajante proximo
+              <label className="caixa-marcacao">
+                <input type="checkbox" checked={privacidade.visivelComoProximo}
+                       onChange={e => setPrivacidade(a => ({ ...a, visivelComoProximo: e.target.checked }))} />
+                Aparecer para quem vai ao mesmo destino
               </label>
+              <span className="ajuda">Os outros veem só seu nome e sua cidade, nunca a localização exata.</span>
             </div>
             <div className="campo">
-              <label>Quem pode me enviar convites</label>
-              <select value={privacidade.quemPodeConvidar}
-                      onChange={e => setPrivacidade(a => ({
-                        ...a, quemPodeConvidar: e.target.value
-                      }))}>
+              <label htmlFor="pf-convites">Quem pode me enviar convites</label>
+              <select id="pf-convites" value={privacidade.quemPodeConvidar}
+                      onChange={e => setPrivacidade(a => ({ ...a, quemPodeConvidar: e.target.value }))}>
                 <option value="TODOS">Qualquer viajante</option>
-                <option value="MESMO_DESTINO">Somente quem vai ao mesmo destino</option>
-                <option value="NINGUEM">Ninguem</option>
+                <option value="MESMO_DESTINO">Só quem vai ao mesmo destino</option>
+                <option value="NINGUEM">Ninguém</option>
               </select>
             </div>
-            <button className="botao" type="submit">Salvar preferencias</button>
+            <button className="botao" type="submit">Salvar privacidade</button>
           </form>
         </div>
       </div>
 
       <div className="cartao">
-        <h2>Notificacoes</h2>
+        <h2>Notificações{naoLidas > 0 && <span className="texto-suave"> ({naoLidas} não lidas)</span>}</h2>
         {notificacoes.length === 0 ? (
-          <p style={{ color: 'var(--cinza-600)' }}>Nenhuma notificacao.</p>
+          <Vazio>Nenhuma notificação por enquanto.</Vazio>
         ) : (
           <ul className="lista-limpa">
             {notificacoes.map(n => (
-              <li key={n.id} style={{ opacity: n.lida ? 0.55 : 1 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+              <li key={n.id} className={`notificacao${n.lida ? ' lida' : ''}`}>
+                <div className="linha-titulo">
                   <div>
-                    <span className="selo cinza">{n.tipo.toLowerCase()}</span>{' '}
+                    <span className="selo cinza">{rotulo('notificacao', n.tipo)}</span>{' '}
                     {n.mensagem}
                     <div className="rotulo-pequeno">{dataHora(n.data)}</div>
                   </div>
                   {!n.lida && (
-                    <button className="botao secundario pequeno" onClick={() => marcarLida(n.id)}>
+                    <button className="botao-texto pequeno-texto" onClick={() => marcarLida(n.id)}>
                       Marcar como lida
                     </button>
                   )}

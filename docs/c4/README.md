@@ -51,7 +51,7 @@ configuracao. Por isso o sistema roda inteiro sem nenhuma chave de API.
 `c4-nivel-4-codigo.mmd` / `c4-nivel-4-codigo.png`
 
 Desce ao nivel de classes em um recorte do sistema, o componente de comparacao de custos,
-que implementa o RF-007 e a regra RN-007. O diagrama mostra o controlador, o servico, a
+que implementa o RF-004 e a regra RN-007. O diagrama mostra o controlador, o servico, a
 interface `FonteDePreco` com as tres implementacoes, as entidades `ComparacaoCusto` e
 `OpcaoDeslocamento`, o enum `ModalTransporte` e o repositorio. As assinaturas sao as mesmas
 que estao no codigo-fonte.

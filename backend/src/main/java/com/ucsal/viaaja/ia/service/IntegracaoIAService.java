@@ -2,12 +2,10 @@ package com.ucsal.viaaja.ia.service;
 
 import com.ucsal.viaaja.common.exception.ServicoIndisponivelException;
 import com.ucsal.viaaja.ia.ServicoIA;
-import com.ucsal.viaaja.ia.domain.RegistroChamadaIA;
 import com.ucsal.viaaja.ia.dto.DadosGeracaoRoteiro;
 import com.ucsal.viaaja.ia.dto.ParametrosBusca;
 import com.ucsal.viaaja.ia.dto.ResumoAvaliacoes;
 import com.ucsal.viaaja.ia.dto.RoteiroSugerido;
-import com.ucsal.viaaja.ia.repository.RegistroChamadaIARepository;
 import java.util.List;
 import java.util.function.Supplier;
 import org.springframework.cache.annotation.Cacheable;
@@ -17,11 +15,11 @@ import org.springframework.stereotype.Service;
 public class IntegracaoIAService {
 
     private final ServicoIA servicoIA;
-    private final RegistroChamadaIARepository registroRepository;
+    private final RegistroChamadasService registroChamadas;
 
-    public IntegracaoIAService(ServicoIA servicoIA, RegistroChamadaIARepository registroRepository) {
+    public IntegracaoIAService(ServicoIA servicoIA, RegistroChamadasService registroChamadas) {
         this.servicoIA = servicoIA;
-        this.registroRepository = registroRepository;
+        this.registroChamadas = registroChamadas;
     }
 
     public String provedorAtivo() {
@@ -66,12 +64,11 @@ public class IntegracaoIAService {
         } catch (Exception ex) {
             registrar(funcionalidade, usuarioId, System.currentTimeMillis() - inicio, "ERRO", ex.getMessage());
             throw new ServicoIndisponivelException("IA",
-                    "Os recursos inteligentes estao temporariamente fora do ar (RNF-011)");
+                    "Os recursos de IA estão temporariamente fora do ar");
         }
     }
 
     private void registrar(String funcionalidade, Long usuarioId, long tempo, String status, String detalhe) {
-        registroRepository.save(new RegistroChamadaIA(funcionalidade, servicoIA.nome(), usuarioId,
-                tempo, status, detalhe, false));
+        registroChamadas.registrar(funcionalidade, servicoIA.nome(), usuarioId, tempo, status, detalhe);
     }
 }

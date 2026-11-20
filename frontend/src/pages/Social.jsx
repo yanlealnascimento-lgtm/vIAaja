@@ -2,12 +2,17 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, parametros } from '../api/client.js'
 import Aviso from '../components/Aviso.jsx'
+import CabecalhoPagina from '../components/CabecalhoPagina.jsx'
 import Vazio from '../components/Vazio.jsx'
-import { dataHora } from '../utils/formato.js'
+import { dataHora, rotulo } from '../utils/formato.js'
+
+function corConvite(status) {
+  return { ACEITO: 'verde', RECUSADO: 'vermelho', EXPIRADO: 'cinza' }[status] || 'amarelo'
+}
 
 export default function Social() {
   const [cidade, setCidade] = useState('')
-  const [viajantes, setViajantes] = useState([])
+  const [viajantes, setViajantes] = useState(null)
   const [recebidos, setRecebidos] = useState([])
   const [enviados, setEnviados] = useState([])
   const [reunioes, setReunioes] = useState([])
@@ -41,15 +46,15 @@ export default function Social() {
     }
   }
 
-  async function convidar(destinatarioId) {
+  async function convidar(viajante) {
     setErro('')
     setMensagem('')
     try {
       await api.post('/social/convites', {
-        destinatarioId,
-        mensagem: 'Oi! Quero trocar dicas sobre essa viagem.'
+        destinatarioId: viajante.id,
+        mensagem: 'Oi! Vi que vamos para o mesmo destino. Quer trocar dicas e combinar a viagem?'
       })
-      setMensagem('Convite enviado.')
+      setMensagem(`Convite enviado para ${viajante.nome}.`)
       carregar()
     } catch (e) {
       setErro(e.message)
@@ -60,7 +65,7 @@ export default function Social() {
     setErro('')
     try {
       await api.post(`/social/convites/${conviteId}/aceitar`, { idiomas: ['pt-BR', 'en-US'] })
-      setMensagem('Convite aceito. A sala de reuniao foi criada.')
+      setMensagem('Convite aceito. A sala de conversa já está disponível em Minhas conversas.')
       carregar()
     } catch (e) {
       setErro(e.message)
@@ -71,6 +76,7 @@ export default function Social() {
     setErro('')
     try {
       await api.patch(`/social/convites/${conviteId}/recusar`)
+      setMensagem('Convite recusado.')
       carregar()
     } catch (e) {
       setErro(e.message)
@@ -79,37 +85,41 @@ export default function Social() {
 
   return (
     <>
-      <h1>Comunidade de viajantes</h1>
+      <CabecalhoPagina
+        titulo="Comunidade"
+        descricao="Encontre quem vai para o mesmo destino, troque convites e converse por vídeo com tradução simultânea."
+      />
 
       <Aviso tipo="erro">{erro}</Aviso>
       <Aviso tipo="sucesso">{mensagem}</Aviso>
 
       <div className="cartao">
-        <h2>Descobrir viajantes</h2>
-        <p className="rotulo-pequeno">
-          Aparecem apenas viajantes que ativaram a visibilidade no perfil (RN-010).
+        <h2>Quem vai para o mesmo lugar</h2>
+        <p className="descricao-secao">
+          Só aparecem viajantes que escolheram ficar visíveis no perfil. A busca usa a cidade aproximada,
+          nunca a localização exata.
         </p>
-        <form onSubmit={descobrir} className="linha-botoes" style={{ marginBottom: 14 }}>
-          <input placeholder="Cidade do destino" value={cidade}
-                 onChange={e => setCidade(e.target.value)} style={{ maxWidth: 300 }} />
-          <button className="botao" type="submit">Buscar</button>
+        <form onSubmit={descobrir} className="linha-busca" style={{ marginBottom: 18 }}>
+          <input aria-label="Cidade do destino" placeholder="Cidade do destino, ou vazio para todos" value={cidade}
+                 onChange={e => setCidade(e.target.value)} />
+          <button className="botao" type="submit">Procurar</button>
         </form>
 
-        {viajantes.length === 0 ? (
-          <Vazio>Nenhum viajante encontrado ate agora.</Vazio>
+        {viajantes === null ? null : viajantes.length === 0 ? (
+          <Vazio>Ninguém visível para esse destino agora.</Vazio>
         ) : (
           <table>
             <thead>
-              <tr><th>Nome</th><th>Cidade</th><th></th></tr>
+              <tr><th>Viajante</th><th>Cidade</th><th></th></tr>
             </thead>
             <tbody>
               {viajantes.map(v => (
                 <tr key={v.id}>
                   <td>{v.nome}</td>
-                  <td>{v.cidadeAproximada || '-'}</td>
-                  <td>
-                    <button className="botao pequeno" onClick={() => convidar(v.id)}>
-                      Enviar cutucada
+                  <td className="texto-suave">{v.cidadeAproximada || 'Não informada'}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    <button className="botao secundario pequeno" onClick={() => convidar(v)}>
+                      Enviar convite
                     </button>
                   </td>
                 </tr>
@@ -122,18 +132,22 @@ export default function Social() {
       <div className="grade duas">
         <div className="cartao">
           <h2>Convites recebidos</h2>
-          {recebidos.length === 0 ? <Vazio>Nenhum convite.</Vazio> : (
+          {recebidos.length === 0 ? <Vazio>Nenhum convite recebido.</Vazio> : (
             <ul className="lista-limpa">
               {recebidos.map(c => (
                 <li key={c.id}>
-                  <strong>{c.remetente}</strong> <span className="selo">{c.status.toLowerCase()}</span>
-                  <div style={{ fontSize: 14 }}>{c.mensagem}</div>
-                  <div className="rotulo-pequeno">{dataHora(c.dataEnvio)}</div>
+                  <div className="linha-titulo">
+                    <strong>{c.remetente}</strong>
+                    <span className={`selo ${corConvite(c.status)}`}>{rotulo('convite', c.status)}</span>
+                  </div>
+                  {c.mensagem && <p style={{ margin: '4px 0' }}>{c.mensagem}</p>}
+                  <div className="rotulo-pequeno">
+                    {c.destino ? `Sobre ${c.destino}, ` : ''}{dataHora(c.dataEnvio)}
+                  </div>
                   {c.status === 'ENVIADO' && (
-                    <div className="linha-botoes" style={{ marginTop: 8 }}>
+                    <div className="linha-botoes" style={{ marginTop: 10 }}>
                       <button className="botao pequeno" onClick={() => aceitar(c.id)}>Aceitar</button>
-                      <button className="botao secundario pequeno"
-                              onClick={() => recusar(c.id)}>Recusar</button>
+                      <button className="botao secundario pequeno" onClick={() => recusar(c.id)}>Recusar</button>
                     </div>
                   )}
                 </li>
@@ -144,12 +158,17 @@ export default function Social() {
 
         <div className="cartao">
           <h2>Convites enviados</h2>
-          {enviados.length === 0 ? <Vazio>Nenhum convite enviado.</Vazio> : (
+          {enviados.length === 0 ? <Vazio>Você ainda não convidou ninguém.</Vazio> : (
             <ul className="lista-limpa">
               {enviados.map(c => (
                 <li key={c.id}>
-                  <strong>{c.destinatario}</strong> <span className="selo">{c.status.toLowerCase()}</span>
-                  <div className="rotulo-pequeno">{dataHora(c.dataEnvio)}</div>
+                  <div className="linha-titulo">
+                    <strong>{c.destinatario}</strong>
+                    <span className={`selo ${corConvite(c.status)}`}>{rotulo('convite', c.status)}</span>
+                  </div>
+                  <div className="rotulo-pequeno">
+                    {c.destino ? `Sobre ${c.destino}, ` : ''}{dataHora(c.dataEnvio)}
+                  </div>
                 </li>
               ))}
             </ul>
@@ -158,28 +177,32 @@ export default function Social() {
       </div>
 
       <div className="cartao">
-        <h2>Minhas reunioes</h2>
-        {reunioes.length === 0 ? <Vazio>Nenhuma reuniao agendada.</Vazio> : (
-          <table>
-            <thead>
-              <tr><th>Com quem</th><th>Situacao</th><th>Idiomas</th><th>Quando</th><th></th></tr>
-            </thead>
-            <tbody>
-              {reunioes.map(r => (
-                <tr key={r.id}>
-                  <td>{r.comQuem}</td>
-                  <td><span className="selo">{r.status.toLowerCase()}</span></td>
-                  <td>{r.idiomas.join(', ')}</td>
-                  <td>{dataHora(r.dataHora)}</td>
-                  <td>
-                    {r.status !== 'ENCERRADA' && (
-                      <Link className="botao pequeno" to={`/reuniao/${r.salaId}`}>Entrar</Link>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <h2>Minhas conversas</h2>
+        {reunioes.length === 0 ? (
+          <Vazio>Quando um convite for aceito, a sala de conversa aparece aqui.</Vazio>
+        ) : (
+          <div className="tabela-rolagem">
+            <table>
+              <thead>
+                <tr><th>Com quem</th><th>Situação</th><th>Idiomas</th><th>Criada em</th><th></th></tr>
+              </thead>
+              <tbody>
+                {reunioes.map(r => (
+                  <tr key={r.id}>
+                    <td>{r.comQuem}</td>
+                    <td><span className={`selo ${r.status === 'ENCERRADA' ? 'cinza' : 'mar'}`}>{rotulo('reuniao', r.status)}</span></td>
+                    <td>{r.idiomas.map(i => rotulo('idioma', i)).join(' e ')}</td>
+                    <td className="num">{dataHora(r.dataHora)}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      {r.status !== 'ENCERRADA' && (
+                        <Link className="botao pequeno" to={`/reuniao/${r.salaId}`}>Entrar na sala</Link>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </>

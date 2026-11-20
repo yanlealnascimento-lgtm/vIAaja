@@ -152,6 +152,6 @@ public class SocialController {
         String traducao = service.traduzirFala(salaId, usuario.getId(),
                 requisicao.fala(), requisicao.idiomaDestino());
         return Map.of("original", requisicao.fala(), "traducao", traducao,
-                "aviso", "A traducao e um apoio e pode conter imprecisoes (RN-014)");
+                "aviso", "A tradução é um apoio e pode conter imprecisões");
     }
 }

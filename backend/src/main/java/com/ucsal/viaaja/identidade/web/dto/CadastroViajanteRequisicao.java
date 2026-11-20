@@ -12,7 +12,7 @@ public record CadastroViajanteRequisicao(
         @NotBlank @Size(min = 3, max = 150) String nome,
         @NotBlank @Email String email,
         @NotBlank @Size(min = 8, max = 72) String senha,
-        @NotBlank @Pattern(regexp = "\\d{11}", message = "CPF deve conter 11 digitos") String cpf,
+        @NotBlank @Pattern(regexp = "\\d{11}", message = "O CPF deve ter 11 dígitos") String cpf,
         @NotBlank @Size(min = 10, max = 20) String telefone,
         @NotNull @Past LocalDate dataNascimento,
         String cidadeAproximada) {

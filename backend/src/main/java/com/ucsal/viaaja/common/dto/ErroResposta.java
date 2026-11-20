@@ -20,7 +20,7 @@ public record ErroResposta(
     }
 
     public static ErroResposta validacao(int status, String mensagem, List<CampoInvalido> campos) {
-        return new ErroResposta(LocalDateTime.now(), status, "Dados invalidos", mensagem, null, campos);
+        return new ErroResposta(LocalDateTime.now(), status, "Dados inválidos", mensagem, null, campos);
     }
 
     public record CampoInvalido(String campo, String mensagem) {

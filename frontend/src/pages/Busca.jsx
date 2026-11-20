@@ -1,20 +1,26 @@
 import { useState } from 'react'
 import { api, parametros } from '../api/client.js'
 import Aviso from '../components/Aviso.jsx'
+import CabecalhoPagina from '../components/CabecalhoPagina.jsx'
 import Vazio from '../components/Vazio.jsx'
-import { moeda, dataHora, duracao, nomeModal, daquiA } from '../utils/formato.js'
+import { moeda, dataHora, duracao, nomeModal, daquiA, plural } from '../utils/formato.js'
 
 export default function Busca() {
   const [aba, setAba] = useState('passagens')
 
   return (
     <>
-      <h1>Buscas</h1>
-      <div className="linha-botoes" style={{ marginBottom: 16 }}>
-        <button className={`botao ${aba === 'passagens' ? '' : 'secundario'}`}
-                onClick={() => setAba('passagens')}>Passagens</button>
-        <button className={`botao ${aba === 'hospedagens' ? '' : 'secundario'}`}
-                onClick={() => setAba('hospedagens')}>Hospedagens</button>
+      <CabecalhoPagina
+        titulo="Passagens e hotéis"
+        descricao="Ofertas publicadas pelos parceiros, com filtros por preço, paradas e categoria."
+      />
+      <div className="abas" role="tablist">
+        <button role="tab" aria-selected={aba === 'passagens'} onClick={() => setAba('passagens')}>
+          Passagens
+        </button>
+        <button role="tab" aria-selected={aba === 'hospedagens'} onClick={() => setAba('hospedagens')}>
+          Hospedagens
+        </button>
       </div>
       {aba === 'passagens' ? <BuscaPassagens /> : <BuscaHospedagens />}
     </>
@@ -29,7 +35,6 @@ function BuscaPassagens() {
   const [pagina, setPagina] = useState(null)
   const [erro, setErro] = useState('')
   const [carregando, setCarregando] = useState(false)
-  const [buscou, setBuscou] = useState(false)
 
   function alterar(campo, valor) {
     setForm(anterior => ({ ...anterior, [campo]: valor }))
@@ -40,9 +45,7 @@ function BuscaPassagens() {
     setErro('')
     setCarregando(true)
     try {
-      const dados = await api.get('/busca/passagens' + parametros(form))
-      setPagina(dados)
-      setBuscou(true)
+      setPagina(await api.get('/busca/passagens' + parametros(form)))
     } catch (e) {
       setErro(e.message)
     } finally {
@@ -54,92 +57,96 @@ function BuscaPassagens() {
     <>
       <div className="cartao">
         <form onSubmit={buscar}>
-          <div className="grade tres">
+          <div className="grade quatro">
             <div className="campo">
-              <label>Origem</label>
-              <input value={form.origem} required onChange={e => alterar('origem', e.target.value)} />
+              <label htmlFor="p-origem">Saindo de</label>
+              <input id="p-origem" value={form.origem} required onChange={e => alterar('origem', e.target.value)} />
             </div>
             <div className="campo">
-              <label>Destino</label>
-              <input value={form.destino} required onChange={e => alterar('destino', e.target.value)} />
+              <label htmlFor="p-destino">Indo para</label>
+              <input id="p-destino" value={form.destino} required onChange={e => alterar('destino', e.target.value)} />
             </div>
             <div className="campo">
-              <label>Data</label>
-              <input type="date" value={form.data} required onChange={e => alterar('data', e.target.value)} />
+              <label htmlFor="p-data">Data</label>
+              <input id="p-data" type="date" value={form.data} required onChange={e => alterar('data', e.target.value)} />
             </div>
             <div className="campo">
-              <label>Passageiros</label>
-              <input type="number" min="1" max="9" value={form.passageiros}
+              <label htmlFor="p-passageiros">Passageiros</label>
+              <input id="p-passageiros" type="number" min="1" max="9" value={form.passageiros}
                      onChange={e => alterar('passageiros', e.target.value)} />
             </div>
             <div className="campo">
-              <label>Modal</label>
-              <select value={form.modal} onChange={e => alterar('modal', e.target.value)}>
-                <option value="">Todos</option>
-                <option value="AVIAO">Aviao</option>
-                <option value="ONIBUS">Onibus</option>
+              <label htmlFor="p-modal">Meio de transporte</label>
+              <select id="p-modal" value={form.modal} onChange={e => alterar('modal', e.target.value)}>
+                <option value="">Avião e ônibus</option>
+                <option value="AVIAO">Só avião</option>
+                <option value="ONIBUS">Só ônibus</option>
               </select>
             </div>
             <div className="campo">
-              <label>Preco maximo</label>
-              <input type="number" min="0" step="10" value={form.precoMaximo}
+              <label htmlFor="p-preco">Preço máximo</label>
+              <input id="p-preco" type="number" min="0" step="10" placeholder="Sem limite" value={form.precoMaximo}
                      onChange={e => alterar('precoMaximo', e.target.value)} />
             </div>
             <div className="campo">
-              <label>Paradas no maximo</label>
-              <input type="number" min="0" max="5" value={form.paradasMaximas}
+              <label htmlFor="p-paradas">Paradas, no máximo</label>
+              <input id="p-paradas" type="number" min="0" max="5" placeholder="Qualquer" value={form.paradasMaximas}
                      onChange={e => alterar('paradasMaximas', e.target.value)} />
             </div>
             <div className="campo">
-              <label>Ordenar por</label>
-              <select value={form.ordenarPor} onChange={e => alterar('ordenarPor', e.target.value)}>
-                <option value="preco">Preco</option>
-                <option value="duracao">Chegada</option>
-                <option value="partida">Partida</option>
-                <option value="paradas">Paradas</option>
+              <label htmlFor="p-ordem">Ordenar por</label>
+              <select id="p-ordem" value={form.ordenarPor} onChange={e => alterar('ordenarPor', e.target.value)}>
+                <option value="preco">Menor preço</option>
+                <option value="duracao">Menor duração</option>
+                <option value="partida">Horário de partida</option>
+                <option value="paradas">Menos paradas</option>
               </select>
             </div>
           </div>
-          <button className="botao" type="submit" disabled={carregando}>
-            {carregando ? 'Buscando...' : 'Buscar passagens'}
-          </button>
+          <div className="linha-botoes">
+            <button className="botao" type="submit" disabled={carregando}>
+              {carregando ? 'Buscando…' : 'Buscar passagens'}
+            </button>
+          </div>
         </form>
       </div>
 
       <Aviso tipo="erro">{erro}</Aviso>
 
-      {buscou && pagina && (
+      {pagina && (
         <div className="cartao">
-          <h2>{pagina.totalElementos} resultado(s)</h2>
+          <h2>{plural(pagina.totalElementos, 'passagem encontrada', 'passagens encontradas')}</h2>
           {pagina.conteudo.length === 0 ? (
-            <Vazio>Nenhuma passagem encontrada com esses filtros.</Vazio>
+            <Vazio>Nenhuma passagem com esses filtros. Tente outra data ou aumente o preço máximo.</Vazio>
           ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Modal</th>
-                  <th>Empresa</th>
-                  <th>Partida</th>
-                  <th>Chegada</th>
-                  <th>Duracao</th>
-                  <th>Paradas</th>
-                  <th>Preco</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pagina.conteudo.map(p => (
-                  <tr key={p.id}>
-                    <td>{nomeModal(p.modal)}</td>
-                    <td>{p.empresa}</td>
-                    <td>{dataHora(p.dataPartida)}</td>
-                    <td>{dataHora(p.dataChegada)}</td>
-                    <td>{duracao(p.duracaoMinutos)}</td>
-                    <td>{p.numeroParadas}</td>
-                    <td><strong>{moeda(p.preco)}</strong></td>
+            <div className="tabela-rolagem">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Transporte</th>
+                    <th>Empresa</th>
+                    <th>Partida</th>
+                    <th>Chegada</th>
+                    <th className="num">Duração</th>
+                    <th className="num">Paradas</th>
+                    <th className="num">Preço</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {pagina.conteudo.map(p => (
+                    <tr key={p.id}>
+                      <td>{nomeModal(p.modal)}</td>
+                      <td>{p.empresa}</td>
+                      <td className="num">{dataHora(p.dataPartida)}</td>
+                      <td className="num">{dataHora(p.dataChegada)}</td>
+                      <td className="num">{duracao(p.duracaoMinutos)}</td>
+                      <td className="num">{p.numeroParadas === 0 ? 'Direto' : p.numeroParadas}</td>
+                      <td className="num"><strong>{moeda(p.preco)}</strong></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}
@@ -154,7 +161,6 @@ function BuscaHospedagens() {
   const [pagina, setPagina] = useState(null)
   const [erro, setErro] = useState('')
   const [carregando, setCarregando] = useState(false)
-  const [buscou, setBuscou] = useState(false)
 
   function alterar(campo, valor) {
     setForm(anterior => ({ ...anterior, [campo]: valor }))
@@ -165,9 +171,7 @@ function BuscaHospedagens() {
     setErro('')
     setCarregando(true)
     try {
-      const dados = await api.get('/busca/hospedagens' + parametros(form))
-      setPagina(dados)
-      setBuscou(true)
+      setPagina(await api.get('/busca/hospedagens' + parametros(form)))
     } catch (e) {
       setErro(e.message)
     } finally {
@@ -179,24 +183,24 @@ function BuscaHospedagens() {
     <>
       <div className="cartao">
         <form onSubmit={buscar}>
-          <div className="grade tres">
+          <div className="grade quatro">
             <div className="campo">
-              <label>Cidade</label>
-              <input value={form.cidade} required onChange={e => alterar('cidade', e.target.value)} />
+              <label htmlFor="h-cidade">Cidade</label>
+              <input id="h-cidade" value={form.cidade} required onChange={e => alterar('cidade', e.target.value)} />
             </div>
             <div className="campo">
-              <label>Hospedes</label>
-              <input type="number" min="1" max="9" value={form.hospedes}
+              <label htmlFor="h-hospedes">Hóspedes</label>
+              <input id="h-hospedes" type="number" min="1" max="9" value={form.hospedes}
                      onChange={e => alterar('hospedes', e.target.value)} />
             </div>
             <div className="campo">
-              <label>Preco maximo da diaria</label>
-              <input type="number" min="0" step="10" value={form.precoMaximo}
+              <label htmlFor="h-preco">Diária de até</label>
+              <input id="h-preco" type="number" min="0" step="10" placeholder="Sem limite" value={form.precoMaximo}
                      onChange={e => alterar('precoMaximo', e.target.value)} />
             </div>
             <div className="campo">
-              <label>Categoria minima</label>
-              <select value={form.categoriaMinima} onChange={e => alterar('categoriaMinima', e.target.value)}>
+              <label htmlFor="h-categoria">Categoria</label>
+              <select id="h-categoria" value={form.categoriaMinima} onChange={e => alterar('categoriaMinima', e.target.value)}>
                 <option value="">Qualquer</option>
                 <option value="3">3 estrelas ou mais</option>
                 <option value="4">4 estrelas ou mais</option>
@@ -204,43 +208,49 @@ function BuscaHospedagens() {
               </select>
             </div>
             <div className="campo">
-              <label>Ordenar por</label>
-              <select value={form.ordenarPor} onChange={e => alterar('ordenarPor', e.target.value)}>
-                <option value="preco">Preco</option>
-                <option value="categoria">Categoria</option>
+              <label htmlFor="h-ordem">Ordenar por</label>
+              <select id="h-ordem" value={form.ordenarPor} onChange={e => alterar('ordenarPor', e.target.value)}>
+                <option value="preco">Menor diária</option>
+                <option value="categoria">Mais estrelas</option>
               </select>
             </div>
           </div>
-          <button className="botao" type="submit" disabled={carregando}>
-            {carregando ? 'Buscando...' : 'Buscar hospedagens'}
-          </button>
+          <div className="linha-botoes">
+            <button className="botao" type="submit" disabled={carregando}>
+              {carregando ? 'Buscando…' : 'Buscar hospedagens'}
+            </button>
+          </div>
         </form>
       </div>
 
       <Aviso tipo="erro">{erro}</Aviso>
 
-      {buscou && pagina && (
-        <div className="cartao">
-          <h2>{pagina.totalElementos} resultado(s)</h2>
+      {pagina && (
+        <>
+          <h2>{plural(pagina.totalElementos, 'hospedagem encontrada', 'hospedagens encontradas')}</h2>
           {pagina.conteudo.length === 0 ? (
-            <Vazio>Nenhuma hospedagem encontrada com esses filtros.</Vazio>
+            <Vazio>Nenhuma hospedagem com esses filtros. Tente outra categoria ou aumente a diária.</Vazio>
           ) : (
             <div className="grade duas">
               {pagina.conteudo.map(h => (
-                <div key={h.id} className="opcao-modal">
-                  <h3>{h.nome}</h3>
-                  <div className="rotulo-pequeno">{h.cidade} - {h.categoria} estrelas</div>
-                  <p style={{ fontSize: 13, color: 'var(--cinza-600)' }}>{h.endereco}</p>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                <article key={h.id} className="cartao hospedagem">
+                  <div className="linha-titulo">
+                    <h3>{h.nome}</h3>
+                    <span className="selo">{h.categoria} estrelas</span>
+                  </div>
+                  <p className="pequeno-texto texto-suave">{h.endereco}</p>
+                  <div className="alternaveis" style={{ marginBottom: 16 }}>
                     {h.comodidades.map(c => <span key={c} className="selo cinza">{c}</span>)}
                   </div>
-                  <div className="valor-grande">{moeda(h.precoDiaria)}</div>
-                  <div className="rotulo-pequeno">por diaria</div>
-                </div>
+                  <div className="linha-titulo">
+                    <span className="preco-diaria">{moeda(h.precoDiaria)}</span>
+                    <span className="rotulo-pequeno">por diária, {plural(h.disponibilidade, 'quarto livre', 'quartos livres')}</span>
+                  </div>
+                </article>
               ))}
             </div>
           )}
-        </div>
+        </>
       )}
     </>
   )

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { api } from '../api/client.js'
 import Aviso from '../components/Aviso.jsx'
-import { moeda, nomeModal, daquiA } from '../utils/formato.js'
+import CabecalhoPagina from '../components/CabecalhoPagina.jsx'
+import { data, moeda, nomeModal, daquiA, plural } from '../utils/formato.js'
 
 export default function Comparador() {
   const [form, setForm] = useState({
@@ -36,23 +37,30 @@ export default function Comparador() {
     }
   }
 
+  const opcoes = resultado
+    ? [...resultado.opcoes].sort((a, b) => {
+        if (a.disponivel !== b.disponivel) return a.disponivel ? -1 : 1
+        return Number(a.custoTotal) - Number(b.custoTotal)
+      })
+    : []
+
   return (
     <>
-      <h1>Quanto custa chegar la</h1>
-      <p style={{ marginTop: -6, color: 'var(--cinza-600)' }}>
-        Compare o custo total por aviao, onibus e carro em uma unica tela.
-      </p>
+      <CabecalhoPagina
+        titulo="Quanto custa chegar lá"
+        descricao="Informe a rota e veja, lado a lado, o custo total de ir de avião, de ônibus ou com o seu carro."
+      />
 
       <div className="cartao">
         <form onSubmit={comparar}>
-          <div className="grade tres">
+          <div className="grade quatro">
             <div className="campo">
-              <label htmlFor="origem">Origem</label>
+              <label htmlFor="origem">Saindo de</label>
               <input id="origem" value={form.origem} required
                      onChange={e => alterar('origem', e.target.value)} />
             </div>
             <div className="campo">
-              <label htmlFor="destino">Destino</label>
+              <label htmlFor="destino">Indo para</label>
               <input id="destino" value={form.destino} required
                      onChange={e => alterar('destino', e.target.value)} />
             </div>
@@ -67,55 +75,52 @@ export default function Comparador() {
                      onChange={e => alterar('passageiros', e.target.value)} />
             </div>
           </div>
-          <button className="botao" type="submit" disabled={carregando}>
-            {carregando ? 'Consultando as fontes...' : 'Comparar custos'}
-          </button>
+          <div className="linha-botoes">
+            <button className="botao" type="submit" disabled={carregando}>
+              {carregando ? 'Comparando…' : 'Comparar custos'}
+            </button>
+          </div>
         </form>
       </div>
 
       <Aviso tipo="erro">{erro}</Aviso>
 
-      {carregando && (
-        <div className="cartao">
-          <p>Consultando passagem aerea, rodoviaria e estimativa de carro...</p>
-        </div>
+      {resultado && (
+        <section className="quadro" aria-label="Resultado da comparação">
+          <div className="quadro-rota">
+            <span className="cidade">{resultado.origem}</span>
+            <span className="trajeto" aria-hidden="true" />
+            <span className="cidade">{resultado.destino}</span>
+          </div>
+          <div className="quadro-info">
+            {plural(resultado.passageiros, 'passageiro', 'passageiros')}, ida em {data(resultado.data)}.
+            Valores totais para o grupo.
+          </div>
+          {opcoes.map(opcao => (
+            <div
+              key={opcao.modal}
+              className={`quadro-linha${opcao.maisBarata ? ' mais-barata' : ''}${!opcao.disponivel ? ' indisponivel' : ''}`}
+            >
+              <div className="modal">
+                {nomeModal(opcao.modal)}
+                {opcao.maisBarata && <span className="marca-barata">Mais barato</span>}
+              </div>
+              <div className="detalhe">
+                {opcao.disponivel ? opcao.detalhe : 'Nenhuma oferta encontrada para essa data.'}
+                {opcao.estimado && <span className="selo">Estimativa</span>}
+              </div>
+              <div className="preco">{opcao.disponivel ? moeda(opcao.custoTotal) : '-'}</div>
+            </div>
+          ))}
+        </section>
       )}
 
-      {resultado && (
-        <>
-          <div className="cartao">
-            <h2>Resultado para {resultado.origem} ate {resultado.destino}</h2>
-            <p className="rotulo-pequeno">
-              {resultado.passageiros} passageiro(s) - consultado agora
-            </p>
-            <div className="grade tres" style={{ marginTop: 14 }}>
-              {resultado.opcoes.map(opcao => (
-                <div key={opcao.modal}
-                     className={`opcao-modal ${opcao.maisBarata ? 'vencedora' : ''} ${!opcao.disponivel ? 'indisponivel' : ''}`}>
-                  <div className="rotulo-pequeno">{nomeModal(opcao.modal)}</div>
-                  <div className="valor-grande">
-                    {opcao.disponivel ? moeda(opcao.custoTotal) : 'Indisponivel'}
-                  </div>
-                  <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {opcao.maisBarata && <span className="selo verde">Mais barata</span>}
-                    {opcao.estimado && <span className="selo amarelo">Estimativa</span>}
-                    {!opcao.disponivel && <span className="selo cinza">Sem resultado</span>}
-                  </div>
-                  <p style={{ fontSize: 13, color: 'var(--cinza-600)', marginBottom: 0 }}>
-                    {opcao.detalhe}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {resultado.opcoes.some(o => o.estimado) && (
-            <Aviso tipo="atencao">
-              O custo de carro e uma estimativa de combustivel e pedagio, calculada por distancia
-              de referencia e valores medios (RN-007).
-            </Aviso>
-          )}
-        </>
+      {resultado?.opcoes.some(o => o.estimado) && (
+        <p className="pequeno-texto texto-suave">
+          O valor de carro é uma estimativa de combustível e pedágio, calculada pela distância de
+          referência até o destino e por preços médios. Os demais valores vêm das ofertas cadastradas
+          pelos parceiros.
+        </p>
       )}
     </>
   )

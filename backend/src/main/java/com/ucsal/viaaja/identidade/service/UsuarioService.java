@@ -45,14 +45,14 @@ public class UsuarioService {
     public Viajante cadastrarViajante(String nome, String email, String senha, String cpf,
                                       String telefone, LocalDate dataNascimento, String cidadeAproximada) {
         if (usuarioRepository.existsByEmailIgnoreCase(email)) {
-            throw new RegraDeNegocioException("E-mail ja cadastrado na plataforma");
+            throw new RegraDeNegocioException("Este e-mail já está cadastrado");
         }
         if (viajanteRepository.existsByCpf(cpf)) {
-            throw new RegraDeNegocioException("CPF ja cadastrado na plataforma");
+            throw new RegraDeNegocioException("Este CPF já está cadastrado");
         }
         if (dataNascimento == null || Period.between(dataNascimento, LocalDate.now()).getYears() < IDADE_MINIMA) {
             throw new RegraDeNegocioException("RN-001",
-                    "O cadastro exige idade minima de " + IDADE_MINIMA + " anos");
+                    "É preciso ter pelo menos " + IDADE_MINIMA + " anos para criar uma conta");
         }
 
         Viajante viajante = new Viajante(nome, email, passwordEncoder.encode(senha), telefone,
@@ -63,14 +63,14 @@ public class UsuarioService {
 
         emailService.enviarConfirmacaoDeConta(salvo.getEmail(), token);
         notificacaoService.enviar(salvo.getId(), Notificacao.TipoNotificacao.CONTA,
-                "Conta criada. Confirme seu e-mail para comecar a usar a plataforma.");
+                "Conta criada. Confirme seu e-mail para começar a usar a plataforma.");
         return salvo;
     }
 
     @Transactional
     public void confirmarConta(String token) {
         Usuario usuario = usuarioRepository.findByTokenConfirmacao(token)
-                .orElseThrow(() -> new RegraDeNegocioException("Token de confirmacao invalido"));
+                .orElseThrow(() -> new RegraDeNegocioException("Código de confirmação inválido"));
         usuario.confirmar();
         notificacaoService.enviar(usuario.getId(), Notificacao.TipoNotificacao.CONTA,
                 "Conta confirmada com sucesso.");
@@ -88,9 +88,9 @@ public class UsuarioService {
     @Transactional
     public void redefinirSenha(String token, String novaSenha) {
         Usuario usuario = usuarioRepository.findByTokenRecuperacao(token)
-                .orElseThrow(() -> new RegraDeNegocioException("Token de recuperacao invalido"));
+                .orElseThrow(() -> new RegraDeNegocioException("Código de recuperação inválido"));
         if (!usuario.recuperacaoValida(LocalDateTime.now())) {
-            throw new RegraDeNegocioException("Token de recuperacao expirado");
+            throw new RegraDeNegocioException("Código de recuperação expirado. Peça um novo.");
         }
         usuario.trocarSenha(passwordEncoder.encode(novaSenha));
     }
@@ -98,7 +98,7 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public Usuario porId(Long id) {
         return usuarioRepository.findById(id)
-                .orElseThrow(() -> RecursoNaoEncontradoException.de("Usuario", id));
+                .orElseThrow(() -> RecursoNaoEncontradoException.de("Usuário", id));
     }
 
     @Transactional(readOnly = true)

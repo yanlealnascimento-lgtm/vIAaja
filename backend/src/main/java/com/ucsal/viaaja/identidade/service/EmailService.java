@@ -18,11 +18,11 @@ public class EmailService {
 
     public void enviarConfirmacaoDeConta(String destinatario, String token) {
         String link = propriedades.getUrlFrontend() + "/confirmar-conta?token=" + token;
-        log.info("[email] confirmacao de conta para {} -> {}", destinatario, link);
+        log.info("[email] confirmação de conta para {} -> {}", destinatario, link);
     }
 
     public void enviarRecuperacaoDeSenha(String destinatario, String token) {
         String link = propriedades.getUrlFrontend() + "/redefinir-senha?token=" + token;
-        log.info("[email] recuperacao de senha para {} -> {}", destinatario, link);
+        log.info("[email] recuperação de senha para {} -> {}", destinatario, link);
     }
 }

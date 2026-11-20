@@ -2,21 +2,23 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client.js'
 import Aviso from '../components/Aviso.jsx'
+import CabecalhoPagina from '../components/CabecalhoPagina.jsx'
 import Carregando from '../components/Carregando.jsx'
+import RoteiroDias from '../components/RoteiroDias.jsx'
 import Vazio from '../components/Vazio.jsx'
-import { data, moeda, hora, daquiA } from '../utils/formato.js'
+import { data, moeda, daquiA, rotulo } from '../utils/formato.js'
 
-const INTERESSES = ['gastronomia', 'natureza', 'cultura', 'vida noturna', 'praia', 'aventura', 'familia']
+const INTERESSES = ['praia', 'gastronomia', 'cultura', 'natureza', 'vida noturna', 'aventura', 'família']
 
 export default function Itinerarios() {
   const [lista, setLista] = useState(null)
   const [destinos, setDestinos] = useState([])
   const [erro, setErro] = useState('')
   const [form, setForm] = useState({
-    titulo: 'Minha proxima viagem',
+    titulo: 'Minha próxima viagem',
     destinoId: '',
     dataInicio: daquiA(40),
-    dataFim: daquiA(44),
+    dataFim: daquiA(43),
     orcamento: 2000,
     interesses: ['cultura', 'gastronomia']
   })
@@ -57,16 +59,22 @@ export default function Itinerarios() {
     }))
   }
 
+  function corpoBase() {
+    return {
+      destinoId: Number(form.destinoId),
+      dataInicio: form.dataInicio,
+      dataFim: form.dataFim,
+      orcamento: Number(form.orcamento),
+      interesses: form.interesses
+    }
+  }
+
   async function criarManual() {
     setErro('')
     setMensagem('')
     try {
-      await api.post('/itinerarios', {
-        ...form,
-        destinoId: Number(form.destinoId),
-        orcamento: Number(form.orcamento)
-      })
-      setMensagem('Itinerario criado em branco. Abra para montar os dias.')
+      await api.post('/itinerarios', { ...corpoBase(), titulo: form.titulo })
+      setMensagem('Itinerário criado. Abra-o na lista abaixo para incluir as atividades de cada dia.')
       recarregar()
     } catch (e) {
       setErro(e.message)
@@ -79,38 +87,23 @@ export default function Itinerarios() {
     setSugestao(null)
     setGerando(true)
     try {
-      const dados = await api.post('/itinerarios/sugestoes', {
-        destinoId: Number(form.destinoId),
-        dataInicio: form.dataInicio,
-        dataFim: form.dataFim,
-        orcamento: Number(form.orcamento),
-        interesses: form.interesses
-      })
-      setSugestao(dados)
+      setSugestao(await api.post('/itinerarios/sugestoes', corpoBase()))
     } catch (e) {
       setErro(e.status === 503
-        ? 'A IA esta indisponivel no momento. Voce ainda pode montar o roteiro manualmente.'
+        ? 'A sugestão automática não respondeu agora. Tente de novo ou crie o itinerário em branco e monte você mesmo.'
         : e.message)
     } finally {
       setGerando(false)
     }
   }
 
-  async function aceitarSugestao() {
+  async function salvarSugestao() {
     setSalvando(true)
     setErro('')
     try {
-      await api.post('/itinerarios/sugestoes/aceitar', {
-        titulo: form.titulo,
-        destinoId: Number(form.destinoId),
-        dataInicio: form.dataInicio,
-        dataFim: form.dataFim,
-        orcamento: Number(form.orcamento),
-        interesses: form.interesses,
-        roteiro: sugestao
-      })
+      await api.post('/itinerarios/sugestoes/aceitar', { ...corpoBase(), titulo: form.titulo, roteiro: sugestao })
       setSugestao(null)
-      setMensagem('Roteiro salvo. Abra o itinerario para editar os itens.')
+      setMensagem('Roteiro salvo. Você pode abrir o itinerário para ajustar horários e atividades.')
       recarregar()
     } catch (e) {
       setErro(e.message)
@@ -121,47 +114,50 @@ export default function Itinerarios() {
 
   return (
     <>
-      <h1>Itinerarios</h1>
+      <CabecalhoPagina
+        titulo="Itinerários"
+        descricao="Escolha destino, datas e o que você gosta de fazer. Peça uma sugestão de roteiro ou comece um itinerário em branco."
+      />
 
       <Aviso tipo="erro">{erro}</Aviso>
       <Aviso tipo="sucesso">{mensagem}</Aviso>
 
       <div className="cartao">
-        <h2>Novo itinerario</h2>
+        <h2>Nova viagem</h2>
         <div className="grade tres">
           <div className="campo">
-            <label>Titulo</label>
-            <input value={form.titulo} onChange={e => alterar('titulo', e.target.value)} />
+            <label htmlFor="i-titulo">Nome da viagem</label>
+            <input id="i-titulo" value={form.titulo} onChange={e => alterar('titulo', e.target.value)} />
           </div>
           <div className="campo">
-            <label>Destino</label>
-            <select value={form.destinoId} onChange={e => alterar('destinoId', e.target.value)}>
+            <label htmlFor="i-destino">Destino</label>
+            <select id="i-destino" value={form.destinoId} onChange={e => alterar('destinoId', e.target.value)}>
               {destinos.map(d => (
-                <option key={d.id} value={d.id}>{d.cidade}/{d.estado}</option>
+                <option key={d.id} value={d.id}>{d.cidade}, {d.estado}</option>
               ))}
             </select>
           </div>
           <div className="campo">
-            <label>Inicio</label>
-            <input type="date" value={form.dataInicio} onChange={e => alterar('dataInicio', e.target.value)} />
-          </div>
-          <div className="campo">
-            <label>Fim</label>
-            <input type="date" value={form.dataFim} onChange={e => alterar('dataFim', e.target.value)} />
-          </div>
-          <div className="campo">
-            <label>Orcamento</label>
-            <input type="number" min="0" step="100" value={form.orcamento}
+            <label htmlFor="i-orcamento">Orçamento total</label>
+            <input id="i-orcamento" type="number" min="0" step="100" value={form.orcamento}
                    onChange={e => alterar('orcamento', e.target.value)} />
+          </div>
+          <div className="campo">
+            <label htmlFor="i-inicio">Chegada</label>
+            <input id="i-inicio" type="date" value={form.dataInicio} onChange={e => alterar('dataInicio', e.target.value)} />
+          </div>
+          <div className="campo">
+            <label htmlFor="i-fim">Volta</label>
+            <input id="i-fim" type="date" value={form.dataFim} onChange={e => alterar('dataFim', e.target.value)} />
           </div>
         </div>
 
-        <div className="campo">
-          <label>Interesses</label>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div className="campo" style={{ marginTop: 20 }}>
+          <span className="rotulo-campo" id="rotulo-interesses">O que você gosta de fazer</span>
+          <div className="alternaveis" role="group" aria-labelledby="rotulo-interesses">
             {INTERESSES.map(i => (
-              <button key={i} type="button"
-                      className={`botao pequeno ${form.interesses.includes(i) ? '' : 'secundario'}`}
+              <button key={i} type="button" className="alternavel"
+                      aria-pressed={form.interesses.includes(i)}
                       onClick={() => alternarInteresse(i)}>
                 {i}
               </button>
@@ -171,7 +167,7 @@ export default function Itinerarios() {
 
         <div className="linha-botoes">
           <button className="botao" onClick={gerarComIA} disabled={gerando || !form.destinoId}>
-            {gerando ? 'Gerando sugestao...' : 'Gerar roteiro com IA'}
+            {gerando ? 'Montando sugestão…' : 'Sugerir roteiro'}
           </button>
           <button className="botao secundario" onClick={criarManual} disabled={!form.destinoId}>
             Criar em branco
@@ -181,38 +177,26 @@ export default function Itinerarios() {
 
       {sugestao && (
         <div className="cartao">
-          <h2>{sugestao.titulo}</h2>
-          <Aviso tipo="atencao">
-            {sugestao.observacao || 'Sugestao gerada automaticamente. Revise antes de salvar.'}
-          </Aviso>
-          <p className="rotulo-pequeno">
-            Custo estimado pela IA: {moeda(sugestao.custoEstimadoTotal)}
+          <div className="linha-titulo">
+            <h2>{sugestao.titulo || 'Roteiro sugerido'}</h2>
+            {sugestao.custoEstimadoTotal != null && (
+              <span className="rotulo-pequeno">
+                Custo estimado <strong className="num" style={{ color: 'var(--tinta)' }}>{moeda(sugestao.custoEstimadoTotal)}</strong>
+              </span>
+            )}
+          </div>
+          <p className="descricao-secao">
+            {sugestao.observacao || 'Roteiro sugerido automaticamente. Confira horários e preços antes de viajar.'}
           </p>
 
-          {sugestao.dias.map(dia => (
-            <div key={dia.ordem} className="dia-itinerario">
-              <h3>Dia {dia.ordem} - {data(dia.data)}</h3>
-              {dia.atividades.map((a, indice) => (
-                <div key={indice} className="item-itinerario">
-                  <div>
-                    <strong>{a.titulo}</strong>
-                    <div className="rotulo-pequeno">
-                      {a.periodo} - {hora(a.horaInicio)} as {hora(a.horaFim)}
-                    </div>
-                    <div style={{ fontSize: 13, color: 'var(--cinza-600)' }}>{a.descricao}</div>
-                  </div>
-                  <div style={{ whiteSpace: 'nowrap' }}>{moeda(a.custoEstimado)}</div>
-                </div>
-              ))}
-            </div>
-          ))}
+          <RoteiroDias dias={sugestao.dias} />
 
-          <div className="linha-botoes">
-            <button className="botao" onClick={aceitarSugestao} disabled={salvando}>
-              {salvando ? 'Salvando...' : 'Aceitar e salvar'}
+          <div className="linha-botoes" style={{ marginTop: 20 }}>
+            <button className="botao" onClick={salvarSugestao} disabled={salvando}>
+              {salvando ? 'Salvando…' : 'Salvar roteiro'}
             </button>
             <button className="botao secundario" onClick={gerarComIA} disabled={gerando}>
-              Gerar outra
+              {gerando ? 'Montando…' : 'Sugerir outro'}
             </button>
             <button className="botao perigo" onClick={() => setSugestao(null)}>Descartar</button>
           </div>
@@ -220,45 +204,44 @@ export default function Itinerarios() {
       )}
 
       <div className="cartao">
-        <h2>Meus itinerarios</h2>
+        <h2>Minhas viagens</h2>
         {lista === null ? <Carregando /> : lista.length === 0 ? (
-          <Vazio>Voce ainda nao tem itinerarios salvos.</Vazio>
+          <Vazio>Nenhuma viagem salva ainda. Preencha o formulário acima para começar a primeira.</Vazio>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Titulo</th>
-                <th>Destino</th>
-                <th>Periodo</th>
-                <th>Custo</th>
-                <th>Origem</th>
-                <th>Situacao</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {lista.map(i => (
-                <tr key={i.id}>
-                  <td>{i.titulo}</td>
-                  <td>{i.destino}</td>
-                  <td>{data(i.dataInicio)} a {data(i.dataFim)}</td>
-                  <td>{moeda(i.custoTotal)}</td>
-                  <td>
-                    <span className={`selo ${i.origem === 'MANUAL' ? 'cinza' : ''}`}>
-                      {i.origem === 'MANUAL' ? 'manual'
-                        : i.origem === 'SUGERIDO_IA' ? 'IA' : 'IA editado'}
-                    </span>
-                  </td>
-                  <td>
-                    <span className={`selo ${i.status === 'CONFIRMADO' ? 'verde' : 'amarelo'}`}>
-                      {i.status.toLowerCase()}
-                    </span>
-                  </td>
-                  <td><Link to={`/itinerarios/${i.id}`}>Abrir</Link></td>
+          <div className="tabela-rolagem">
+            <table>
+              <thead>
+                <tr>
+                  <th>Viagem</th>
+                  <th>Destino</th>
+                  <th>Período</th>
+                  <th className="num">Custo</th>
+                  <th>Como foi montado</th>
+                  <th>Situação</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {lista.map(i => (
+                  <tr key={i.id}>
+                    <td><Link to={`/itinerarios/${i.id}`}>{i.titulo}</Link></td>
+                    <td>{i.destino}</td>
+                    <td className="num">{data(i.dataInicio)} a {data(i.dataFim)}</td>
+                    <td className="num">{moeda(i.custoTotal)}</td>
+                    <td>
+                      <span className={`selo ${i.origem === 'MANUAL' ? 'cinza' : 'mar'}`}>
+                        {rotulo('origemItinerario', i.origem)}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`selo ${i.status === 'CONFIRMADO' ? 'verde' : 'amarelo'}`}>
+                        {rotulo('statusItinerario', i.status)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </>

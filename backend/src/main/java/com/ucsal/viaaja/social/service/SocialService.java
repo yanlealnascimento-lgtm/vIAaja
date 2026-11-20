@@ -80,7 +80,7 @@ public class SocialService {
     @Transactional
     public Convite enviarConvite(Long remetenteId, Long destinatarioId, Long destinoId, String mensagem) {
         if (remetenteId.equals(destinatarioId)) {
-            throw new RegraDeNegocioException("Nao e possivel enviar um convite para voce mesmo");
+            throw new RegraDeNegocioException("Não é possível enviar um convite para você mesmo");
         }
 
         Viajante remetente = usuarioService.viajantePorId(remetenteId);
@@ -95,7 +95,7 @@ public class SocialService {
 
         if (!destinatario.getPreferenciaPrivacidade().aceitaConviteDe(mesmoDestino)) {
             throw new RegraDeNegocioException("RN-012",
-                    "Este viajante nao esta aceitando convites no momento");
+                    "Este viajante não está aceitando convites no momento");
         }
 
         long enviadosHoje = conviteRepository.countByRemetenteIdAndDestinatarioIdAndDataEnvioAfter(
@@ -107,7 +107,7 @@ public class SocialService {
 
         Convite convite = conviteRepository.save(new Convite(remetente, destinatario, destino, mensagem));
         notificacaoService.enviar(destinatarioId, Notificacao.TipoNotificacao.CONVITE,
-                remetente.getNome() + " quer conversar sobre uma viagem com voce");
+                remetente.getNome() + " quer conversar sobre uma viagem com você");
         return convite;
     }
 
@@ -120,7 +120,7 @@ public class SocialService {
             throw RecursoNaoEncontradoException.de("Convite", conviteId);
         }
         if (!convite.pendente()) {
-            throw new RegraDeNegocioException("Este convite ja foi respondido");
+            throw new RegraDeNegocioException("Este convite já foi respondido");
         }
 
         convite.aceitar();
@@ -128,7 +128,7 @@ public class SocialService {
                 new Reuniao("sala-" + UUID.randomUUID(), convite, idiomas));
 
         notificacaoService.enviar(convite.getRemetente().getId(), Notificacao.TipoNotificacao.REUNIAO,
-                convite.getDestinatario().getNome() + " aceitou seu convite. A sala de video esta disponivel.");
+                convite.getDestinatario().getNome() + " aceitou seu convite. A sala de vídeo está disponível.");
         return reuniao;
     }
 
@@ -140,7 +140,7 @@ public class SocialService {
             throw RecursoNaoEncontradoException.de("Convite", conviteId);
         }
         if (!convite.pendente()) {
-            throw new RegraDeNegocioException("Este convite ja foi respondido");
+            throw new RegraDeNegocioException("Este convite já foi respondido");
         }
         convite.recusar();
     }
@@ -163,12 +163,12 @@ public class SocialService {
     @Transactional
     public Reuniao entrarNaSala(String salaId, Long viajanteId) {
         Reuniao reuniao = reuniaoRepository.findBySalaId(salaId)
-                .orElseThrow(() -> RecursoNaoEncontradoException.de("Reuniao", salaId));
+                .orElseThrow(() -> RecursoNaoEncontradoException.de("Reunião", salaId));
         if (!reuniao.participa(viajanteId)) {
-            throw RecursoNaoEncontradoException.de("Reuniao", salaId);
+            throw RecursoNaoEncontradoException.de("Reunião", salaId);
         }
         if (reuniao.getStatus() == Reuniao.StatusReuniao.ENCERRADA) {
-            throw new RegraDeNegocioException("Esta reuniao ja foi encerrada");
+            throw new RegraDeNegocioException("Esta conversa já foi encerrada");
         }
         reuniao.iniciar();
         return reuniao;
@@ -177,9 +177,9 @@ public class SocialService {
     @Transactional
     public void encerrarSala(String salaId, Long viajanteId) {
         Reuniao reuniao = reuniaoRepository.findBySalaId(salaId)
-                .orElseThrow(() -> RecursoNaoEncontradoException.de("Reuniao", salaId));
+                .orElseThrow(() -> RecursoNaoEncontradoException.de("Reunião", salaId));
         if (!reuniao.participa(viajanteId)) {
-            throw RecursoNaoEncontradoException.de("Reuniao", salaId);
+            throw RecursoNaoEncontradoException.de("Reunião", salaId);
         }
         reuniao.encerrar();
     }
@@ -187,9 +187,9 @@ public class SocialService {
     @Transactional(readOnly = true)
     public String traduzirFala(String salaId, Long viajanteId, String fala, String idiomaDestino) {
         Reuniao reuniao = reuniaoRepository.findBySalaId(salaId)
-                .orElseThrow(() -> RecursoNaoEncontradoException.de("Reuniao", salaId));
+                .orElseThrow(() -> RecursoNaoEncontradoException.de("Reunião", salaId));
         if (!reuniao.participa(viajanteId)) {
-            throw RecursoNaoEncontradoException.de("Reuniao", salaId);
+            throw RecursoNaoEncontradoException.de("Reunião", salaId);
         }
         return integracaoIA.traduzir(fala, idiomaDestino, viajanteId);
     }

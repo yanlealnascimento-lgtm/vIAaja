@@ -19,6 +19,6 @@ public class ServicoDetalhesUsuario implements UserDetailsService {
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         return usuarioRepository.findByEmailIgnoreCase(email)
                 .map(UsuarioAutenticado::new)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario nao encontrado: " + email));
+                .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado: " + email));
     }
 }

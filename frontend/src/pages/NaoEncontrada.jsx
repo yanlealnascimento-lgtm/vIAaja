@@ -1,11 +1,10 @@
 import { Link } from 'react-router-dom'
+import CabecalhoPagina from '../components/CabecalhoPagina.jsx'
 
 export default function NaoEncontrada() {
   return (
-    <div className="cartao">
-      <h1>Pagina nao encontrada</h1>
-      <p>O endereco acessado nao existe na plataforma.</p>
-      <Link className="botao" to="/">Voltar ao comparador</Link>
-    </div>
+    <CabecalhoPagina titulo="Página não encontrada" descricao="Esse endereço não existe ou foi removido.">
+      <Link className="botao" to="/">Ir para o comparador</Link>
+    </CabecalhoPagina>
   )
 }

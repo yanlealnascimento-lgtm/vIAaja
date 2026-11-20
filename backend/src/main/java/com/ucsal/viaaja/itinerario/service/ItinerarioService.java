@@ -76,7 +76,7 @@ public class ItinerarioService {
         validarPeriodo(inicio, fim);
         if (ChronoUnit.DAYS.between(inicio, fim) + 1 > DIAS_MAXIMOS_PARA_IA) {
             throw new RegraDeNegocioException(
-                    "A geracao automatica aceita no maximo " + DIAS_MAXIMOS_PARA_IA + " dias");
+                    "A sugestão automática aceita no máximo " + DIAS_MAXIMOS_PARA_IA + " dias");
         }
 
         Destino destino = destinoRepository.findById(destinoId)
@@ -131,9 +131,9 @@ public class ItinerarioService {
     @Transactional(readOnly = true)
     public Itinerario detalhar(Long id, Long viajanteId) {
         Itinerario itinerario = itinerarioRepository.buscarComDias(id)
-                .orElseThrow(() -> RecursoNaoEncontradoException.de("Itinerario", id));
+                .orElseThrow(() -> RecursoNaoEncontradoException.de("Itinerário", id));
         if (!itinerario.pertenceA(viajanteId)) {
-            throw RecursoNaoEncontradoException.de("Itinerario", id);
+            throw RecursoNaoEncontradoException.de("Itinerário", id);
         }
         return itinerario;
     }
@@ -146,7 +146,7 @@ public class ItinerarioService {
         DiaItinerario dia = itinerario.getDias().stream()
                 .filter(d -> d.getOrdem() == ordemDoDia)
                 .findFirst()
-                .orElseThrow(() -> new RegraDeNegocioException("Dia " + ordemDoDia + " nao existe no itinerario"));
+                .orElseThrow(() -> new RegraDeNegocioException("Dia " + ordemDoDia + " não existe neste itinerário"));
 
         int proximaOrdem = dia.getItens().size() + 1;
         ItemItinerario item = new ItemItinerario(titulo, descricao, periodo, horaInicio, horaFim,
@@ -163,7 +163,7 @@ public class ItinerarioService {
         boolean removido = itinerario.getDias().stream()
                 .anyMatch(dia -> dia.getItens().removeIf(item -> item.getId().equals(itemId)));
         if (!removido) {
-            throw RecursoNaoEncontradoException.de("Item do itinerario", itemId);
+            throw RecursoNaoEncontradoException.de("Item do itinerário", itemId);
         }
         itinerario.marcarComoEditado();
         itinerario.recalcularCustoTotal();
@@ -175,7 +175,7 @@ public class ItinerarioService {
         itinerario.recalcularCustoTotal();
         itinerario.confirmar();
         notificacaoService.enviar(viajanteId, Notificacao.TipoNotificacao.ITINERARIO,
-                "Itinerario " + itinerario.getTitulo() + " confirmado");
+                "Itinerário " + itinerario.getTitulo() + " confirmado");
         return itinerario;
     }
 
@@ -187,7 +187,7 @@ public class ItinerarioService {
 
     private void validarPeriodo(LocalDate inicio, LocalDate fim) {
         if (inicio == null || fim == null || fim.isBefore(inicio)) {
-            throw new RegraDeNegocioException("A data final deve ser igual ou posterior a data inicial");
+            throw new RegraDeNegocioException("A data de volta deve ser igual ou posterior à data de chegada");
         }
     }
 }

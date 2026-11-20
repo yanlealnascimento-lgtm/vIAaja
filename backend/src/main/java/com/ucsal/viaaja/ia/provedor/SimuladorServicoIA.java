@@ -5,18 +5,20 @@ import com.ucsal.viaaja.ia.dto.AtividadeSugerida;
 import com.ucsal.viaaja.ia.dto.DadosGeracaoRoteiro;
 import com.ucsal.viaaja.ia.dto.DiaSugerido;
 import com.ucsal.viaaja.ia.dto.ParametrosBusca;
-import com.ucsal.viaaja.ia.dto.ResumoAvaliacoes;
 import com.ucsal.viaaja.ia.dto.RestricaoHorario;
+import com.ucsal.viaaja.ia.dto.ResumoAvaliacoes;
 import com.ucsal.viaaja.ia.dto.RoteiroSugerido;
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -39,7 +41,10 @@ public class SimuladorServicoIA implements ServicoIA {
 
     @Override
     public ParametrosBusca interpretarPedido(String textoLivre) {
-        String texto = textoLivre.toLowerCase(Locale.ROOT);
+        String texto = Normalizer.normalize(textoLivre, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replaceAll("(\\d)\\.(\\d{3})", "$1$2")
+                .toLowerCase(Locale.ROOT);
 
         BigDecimal orcamento = null;
         Matcher matcher = PADRAO_ORCAMENTO.matcher(texto);
@@ -67,7 +72,7 @@ public class SimuladorServicoIA implements ServicoIA {
         String destino = extrairDestino(texto);
 
         return new ParametrosBusca(null, destino, inicio, inicio.plusDays(4), orcamento, pessoas,
-                interesses, "Pedido interpretado pelo provedor simulado a partir do texto livre");
+                interesses, "Pedido interpretado pelo simulador local a partir do texto livre");
     }
 
     @Override
@@ -77,8 +82,8 @@ public class SimuladorServicoIA implements ServicoIA {
         BigDecimal acumulado = BigDecimal.ZERO;
 
         List<String> base = dados.atividadesDisponiveis() == null || dados.atividadesDisponiveis().isEmpty()
-                ? List.of("Centro historico", "Mercado local", "Mirante da cidade", "Museu principal",
-                        "Parque urbano", "Praia ou orla", "Restaurante tipico", "Feira de artesanato")
+                ? List.of("Centro histórico", "Mercado local", "Mirante da cidade", "Museu principal",
+                        "Parque urbano", "Praia ou orla", "Restaurante típico", "Feira de artesanato")
                 : dados.atividadesDisponiveis();
 
         for (int i = 0; i < totalDias; i++) {
@@ -91,30 +96,30 @@ public class SimuladorServicoIA implements ServicoIA {
             if (!manhaBloqueada) {
                 String titulo = base.get((i * 2) % base.size());
                 BigDecimal custo = BigDecimal.valueOf(45 + (i * 7) % 60);
-                atividades.add(new AtividadeSugerida("Manha", LocalTime.of(9, 0), LocalTime.of(12, 0),
+                atividades.add(new AtividadeSugerida("MANHA", LocalTime.of(9, 0), LocalTime.of(12, 0),
                         titulo, "Visita guiada em " + titulo + " com tempo livre para fotos", custo));
                 acumulado = acumulado.add(custo);
             }
 
             String tituloTarde = base.get((i * 2 + 1) % base.size());
             BigDecimal custoTarde = BigDecimal.valueOf(60 + (i * 11) % 70);
-            atividades.add(new AtividadeSugerida("Tarde", LocalTime.of(14, 0), LocalTime.of(17, 30),
+            atividades.add(new AtividadeSugerida("TARDE", LocalTime.of(14, 0), LocalTime.of(17, 30),
                     tituloTarde, "Programa de tarde em " + tituloTarde, custoTarde));
             acumulado = acumulado.add(custoTarde);
 
             if (!noiteBloqueada && i % 2 == 0) {
                 BigDecimal custoNoite = BigDecimal.valueOf(90);
-                atividades.add(new AtividadeSugerida("Noite", LocalTime.of(19, 30), LocalTime.of(22, 0),
-                        "Jantar tipico", "Sugestao de restaurante da culinaria local", custoNoite));
+                atividades.add(new AtividadeSugerida("NOITE", LocalTime.of(19, 30), LocalTime.of(22, 0),
+                        "Jantar típico", "Sugestão de restaurante da culinária local", custoNoite));
                 acumulado = acumulado.add(custoNoite);
             }
 
             dias.add(new DiaSugerido(i + 1, data, atividades));
         }
 
-        String observacao = "Sugestao gerada automaticamente. Revise antes de salvar (RN-008).";
+        String observacao = "Sugestão gerada automaticamente. Confira horários e preços antes de viajar.";
         if (dados.orcamento() != null && acumulado.compareTo(dados.orcamento()) > 0) {
-            observacao = observacao + " O custo estimado ultrapassa o orcamento informado.";
+            observacao = observacao + " O custo estimado passa do orçamento informado.";
         }
 
         return new RoteiroSugerido("Roteiro para " + dados.destino(), dados.destino(), dias,
@@ -142,7 +147,7 @@ public class SimuladorServicoIA implements ServicoIA {
         }
 
         if (positivos.isEmpty()) {
-            positivos.add("Avaliacoes majoritariamente neutras sobre " + assunto);
+            positivos.add("Avaliações majoritariamente neutras sobre " + assunto);
         }
         if (negativos.isEmpty()) {
             negativos.add("Nenhum ponto negativo recorrente identificado");
@@ -153,8 +158,8 @@ public class SimuladorServicoIA implements ServicoIA {
 
     @Override
     public List<String> recomendarDestinos(List<String> historico, List<String> interesses) {
-        List<String> catalogo = List.of("Salvador", "Porto Seguro", "Lencois", "Morro de Sao Paulo",
-                "Chapada Diamantina", "Ilheus", "Recife", "Fortaleza", "Rio de Janeiro");
+        List<String> catalogo = List.of("Salvador", "Porto Seguro", "Lençóis", "Morro de São Paulo",
+                "Chapada Diamantina", "Ilhéus", "Recife", "Fortaleza", "Rio de Janeiro");
         return catalogo.stream()
                 .filter(destino -> historico == null || !historico.contains(destino))
                 .limit(4)
@@ -181,28 +186,29 @@ public class SimuladorServicoIA implements ServicoIA {
     }
 
     private String extrairDestino(String texto) {
-        List<String> cidades = Arrays.asList("salvador", "porto seguro", "lencois", "morro de sao paulo",
-                "chapada diamantina", "ilheus", "recife", "fortaleza", "rio de janeiro");
-        for (String cidade : cidades) {
-            if (texto.contains(cidade)) {
-                return capitalizar(cidade);
+        Map<String, String> cidades = new LinkedHashMap<>();
+        cidades.put("morro de sao paulo", "Morro de São Paulo");
+        cidades.put("chapada diamantina", "Lençóis");
+        cidades.put("porto seguro", "Porto Seguro");
+        cidades.put("rio de janeiro", "Rio de Janeiro");
+        cidades.put("salvador", "Salvador");
+        cidades.put("lencois", "Lençóis");
+        cidades.put("chapada", "Lençóis");
+        cidades.put("ilheus", "Ilhéus");
+        cidades.put("recife", "Recife");
+        cidades.put("fortaleza", "Fortaleza");
+        for (Map.Entry<String, String> cidade : cidades.entrySet()) {
+            if (texto.contains(cidade.getKey())) {
+                return cidade.getValue();
             }
         }
         if (texto.contains("litoral") || texto.contains("praia")) {
             return "Porto Seguro";
         }
         if (texto.contains("serra") || texto.contains("montanha") || texto.contains("trilha")) {
-            return "Lencois";
+            return "Lençóis";
         }
         return "Salvador";
     }
 
-    private String capitalizar(String texto) {
-        String[] partes = texto.split(" ");
-        StringBuilder sb = new StringBuilder();
-        for (String parte : partes) {
-            sb.append(Character.toUpperCase(parte.charAt(0))).append(parte.substring(1)).append(" ");
-        }
-        return sb.toString().trim();
-    }
 }

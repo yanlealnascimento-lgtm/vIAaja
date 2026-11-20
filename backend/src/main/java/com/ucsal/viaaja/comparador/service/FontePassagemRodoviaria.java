@@ -30,12 +30,13 @@ public class FontePassagemRodoviaria implements FonteDePreco {
                 origem, destino, data.atStartOfDay(), data.atTime(LocalTime.MAX));
         if (encontradas.isEmpty()) {
             return OpcaoDeslocamento.indisponivel(ModalTransporte.ONIBUS,
-                    "Nenhuma viagem rodoviaria encontrada para esta data");
+                    "Nenhuma viagem de ônibus encontrada para esta data");
         }
         Passagem maisBarata = encontradas.get(0);
         BigDecimal total = maisBarata.getPreco().multiply(BigDecimal.valueOf(passageiros));
-        String detalhe = String.format("%s, %d min de viagem",
-                maisBarata.getEmpresa(), maisBarata.duracaoEmMinutos());
+        long minutos = maisBarata.duracaoEmMinutos();
+        String detalhe = String.format("%s, %dh%02d de viagem",
+                maisBarata.getEmpresa(), minutos / 60, minutos % 60);
         return new OpcaoDeslocamento(ModalTransporte.ONIBUS, total, false, true, detalhe);
     }
 }

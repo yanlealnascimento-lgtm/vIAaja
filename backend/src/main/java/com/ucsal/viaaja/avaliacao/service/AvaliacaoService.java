@@ -52,11 +52,11 @@ public class AvaliacaoService {
         List<String> destinosVisitados = itinerarioRepository.destinosDoViajante(autorId);
         if (!destinosVisitados.contains(destino.getCidade())) {
             throw new RegraDeNegocioException("RN-013",
-                    "Somente quem possui itinerario para este destino pode avalia-lo");
+                    "Só quem tem um itinerário para este destino pode avaliá-lo");
         }
 
         if (avaliacaoRepository.existsByAutorIdAndDestinoId(autorId, destinoId)) {
-            throw new RegraDeNegocioException("Voce ja avaliou este destino");
+            throw new RegraDeNegocioException("Você já avaliou este destino");
         }
 
         Hospedagem hospedagem = hospedagemId == null ? null
@@ -83,7 +83,7 @@ public class AvaliacaoService {
                 .orElseThrow(() -> RecursoNaoEncontradoException.de("Destino", destinoId));
         List<String> comentarios = porDestino(destinoId).stream().map(Avaliacao::getComentario).toList();
         if (comentarios.isEmpty()) {
-            throw new RegraDeNegocioException("Este destino ainda nao possui avaliacoes para resumir");
+            throw new RegraDeNegocioException("Este destino ainda não tem avaliações para resumir");
         }
         return integracaoIA.resumirAvaliacoes(destino.getCidade(), comentarios, usuarioId);
     }
@@ -91,7 +91,7 @@ public class AvaliacaoService {
     @Transactional
     public void moderar(Long avaliacaoId, boolean ocultar) {
         Avaliacao avaliacao = avaliacaoRepository.findById(avaliacaoId)
-                .orElseThrow(() -> RecursoNaoEncontradoException.de("Avaliacao", avaliacaoId));
+                .orElseThrow(() -> RecursoNaoEncontradoException.de("Avaliação", avaliacaoId));
         if (ocultar) {
             avaliacao.ocultar();
         } else {

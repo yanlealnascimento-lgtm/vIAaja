@@ -34,9 +34,9 @@ public class ComparadorService {
             try {
                 opcoes.add(fonte.cotar(origem, destino, data, passageiros));
             } catch (Exception ex) {
-                log.warn("Fonte {} indisponivel: {}", fonte.modalAtendido(), ex.getMessage());
+                log.warn("Fonte {} indisponível: {}", fonte.modalAtendido(), ex.getMessage());
                 opcoes.add(OpcaoDeslocamento.indisponivel(fonte.modalAtendido(),
-                        "Fonte temporariamente indisponivel, resultado parcial (RNF-012)"));
+                        "Fonte temporariamente indisponível, resultado parcial"));
             }
         }
 

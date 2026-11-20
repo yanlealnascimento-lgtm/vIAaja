@@ -11,8 +11,7 @@ public interface ItinerarioRepository extends JpaRepository<Itinerario, Long> {
 
     List<Itinerario> findByViajanteIdOrderByDataInicioDesc(Long viajanteId);
 
-    @Query("select distinct i from Itinerario i left join fetch i.dias d left join fetch d.itens "
-            + "where i.id = :id")
+    @Query("select i from Itinerario i left join fetch i.dias where i.id = :id")
     Optional<Itinerario> buscarComDias(@Param("id") Long id);
 
     @Query("select distinct i.destino.cidade from Itinerario i where i.viajante.id = :viajanteId")

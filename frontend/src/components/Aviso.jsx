@@ -1,4 +1,8 @@
 export default function Aviso({ tipo = 'info', children }) {
   if (!children) return null
-  return <div className={`aviso ${tipo}`}>{children}</div>
+  return (
+    <div className={`aviso ${tipo}`} role={tipo === 'erro' ? 'alert' : 'status'}>
+      {children}
+    </div>
+  )
 }

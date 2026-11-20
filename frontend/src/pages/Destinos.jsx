@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api, parametros } from '../api/client.js'
 import Aviso from '../components/Aviso.jsx'
+import CabecalhoPagina from '../components/CabecalhoPagina.jsx'
 import Carregando from '../components/Carregando.jsx'
 import Vazio from '../components/Vazio.jsx'
 
@@ -25,34 +26,35 @@ export default function Destinos() {
 
   return (
     <>
-      <h1>Destinos</h1>
-      <div className="cartao">
-        <form onSubmit={buscar} className="linha-botoes">
-          <input placeholder="Filtrar por cidade" value={cidade}
-                 onChange={e => setCidade(e.target.value)} style={{ maxWidth: 320 }} />
-          <button className="botao" type="submit">Filtrar</button>
-        </form>
-      </div>
+      <CabecalhoPagina
+        titulo="Destinos"
+        descricao="Cidades com ofertas cadastradas. Abra uma delas para ver as atividades e o que os viajantes acharam."
+      />
+
+      <form onSubmit={buscar} className="linha-busca" style={{ marginBottom: 28 }}>
+        <input aria-label="Filtrar por cidade" placeholder="Filtrar por cidade" value={cidade}
+               onChange={e => setCidade(e.target.value)} />
+        <button className="botao secundario" type="submit">Filtrar</button>
+      </form>
 
       <Aviso tipo="erro">{erro}</Aviso>
 
       {lista === null ? <Carregando /> : lista.length === 0 ? (
-        <Vazio>Nenhum destino encontrado.</Vazio>
+        <Vazio>Nenhuma cidade encontrada com esse nome.</Vazio>
       ) : (
         <div className="grade duas">
           {lista.map(d => (
-            <div key={d.id} className="cartao">
-              <h2>{d.cidade}/{d.estado}</h2>
-              <p style={{ color: 'var(--cinza-600)' }}>{d.descricao}</p>
-              {d.distanciaReferenciaKm && (
-                <p className="rotulo-pequeno">
-                  Distancia de referencia: {d.distanciaReferenciaKm} km
-                </p>
-              )}
-              <Link className="botao secundario pequeno" to={`/destinos/${d.id}`}>
-                Ver atividades e avaliacoes
-              </Link>
-            </div>
+            <article key={d.id} className="cartao cartao-destino">
+              <h2>{d.cidade}</h2>
+              <div className="estado">{d.estado}, {d.pais}</div>
+              <p>{d.descricao}</p>
+              <div className="rodape-cartao">
+                <span className="rotulo-pequeno num">
+                  {d.distanciaReferenciaKm ? `${d.distanciaReferenciaKm} km de Salvador` : ''}
+                </span>
+                <Link to={`/destinos/${d.id}`}>Ver atividades e avaliações</Link>
+              </div>
+            </article>
           ))}
         </div>
       )}

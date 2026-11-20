@@ -34,9 +34,9 @@ public class NotificacaoService {
     @Transactional
     public void marcarComoLida(Long id, Long destinatarioId) {
         Notificacao notificacao = repository.findById(id)
-                .orElseThrow(() -> RecursoNaoEncontradoException.de("Notificacao", id));
+                .orElseThrow(() -> RecursoNaoEncontradoException.de("Notificação", id));
         if (!notificacao.getDestinatarioId().equals(destinatarioId)) {
-            throw RecursoNaoEncontradoException.de("Notificacao", id);
+            throw RecursoNaoEncontradoException.de("Notificação", id);
         }
         notificacao.marcarComoLida();
     }
